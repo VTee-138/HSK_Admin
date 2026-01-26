@@ -6,20 +6,16 @@ import { totalExams } from "../../services/ExamService";
 import { toast } from "react-toastify";
 import { DocumentScanner } from "@mui/icons-material";
 
-const StatCard = ({ icon: Icon, title, value, color }) => (
-  <div className={`bg-white shadow-md rounded-lg p-5 border-l-4 ${color}`}>
-    <div className="flex items-center justify-between">
-      <div>
-        <h3 className="text-sm text-gray-500 font-medium">{title}</h3>
-        <p className="text-2xl font-bold text-gray-800">{value}</p>
+const StatCard = ({ icon: Icon, title, value, colorClass, bgClass }) => (
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+    <div className="flex justify-between items-start mb-4">
+      <div className={`p-3 rounded-xl ${bgClass} ${colorClass}`}>
+        <Icon size={24} className={colorClass} />
       </div>
-      <Icon
-        className={`w-10 h-10 ${color.replace(
-          "border-l-4",
-          "text-opacity-70"
-        )}`}
-      />
+      <span className="text-3xl font-bold text-gray-900">{value}</span>
     </div>
+    <h3 className="font-semibold text-gray-900 mb-1">{title}</h3>
+    <p className="text-sm text-gray-500">Tổng số lượng</p>
   </div>
 );
 
@@ -49,27 +45,30 @@ export default function Dashboard() {
     handleFetch();
   }, []);
   return (
-    <div className="p-[30px] overflow-auto">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800">Dashboard</h2>
+    <div className="p-6 max-w-7xl mx-auto">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Tổng quan hệ thống</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <StatCard
           icon={Users}
-          title="Total Users"
+          title="Người dùng"
           value={totalData?.totalUsers}
-          color="border-blue-500"
+          colorClass="text-blue-600"
+          bgClass="bg-blue-50"
         />
         <StatCard
           icon={FileText}
-          title="Total Exams"
+          title="Đề thi"
           value={totalData?.totalExams}
-          color="border-green-500"
+          colorClass="text-green-600"
+          bgClass="bg-green-50"
         />
         <StatCard
           icon={DocumentScanner}
-          title="Total Documents"
+          title="Tài liệu"
           value={totalData?.totalDocuments}
-          color="border-purple-500"
+          colorClass="text-purple-600"
+          bgClass="bg-purple-50"
         />
       </div>
 

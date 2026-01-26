@@ -1,44 +1,27 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   IconButton,
-  Chip,
-  TextField,
-  InputAdornment,
-  Box,
-  Typography,
-  Tooltip,
-  Avatar,
-  Card,
-  CardContent,
-  Alert,
-  Snackbar,
-  MenuItem,
   Switch,
   FormControlLabel,
+  Snackbar,
+  Alert,
 } from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
 import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Search as SearchIcon,
-  Article as ArticleIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-  Close as CloseIcon,
-  Publish as PublishIcon,
-} from "@mui/icons-material";
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
+  Filter,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import {
   insertOrUpdateBlog,
   getBlogs,
@@ -365,11 +348,11 @@ export default function Blogs() {
 
   const getStatusColor = (status) => {
     const colors = {
-      DRAFT: "warning",
-      PUBLISHED: "success",
-      ARCHIVED: "default",
+      DRAFT: "bg-yellow-50 text-yellow-700 border-yellow-200",
+      PUBLISHED: "bg-green-50 text-green-700 border-green-200",
+      ARCHIVED: "bg-gray-50 text-gray-700 border-gray-200",
     };
-    return colors[status] || "default";
+    return colors[status] || "bg-gray-50 text-gray-700 border-gray-200";
   };
 
   const getStatusLabel = (status) => {
@@ -387,260 +370,235 @@ export default function Blogs() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <Card className="mb-6 shadow-lg">
-          <CardContent>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-                <ArticleIcon className="text-3xl text-purple-500 mr-3" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-800">
-                    Quản lý Bài viết
-                  </h1>
-                  <p className="text-gray-600">
-                    Quản lý danh sách bài viết blog trong hệ thống
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenDialog()}
-                className="bg-purple-500 hover:bg-purple-600"
-                size="large"
-              >
-                Thêm bài viết
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <FileText className="w-8 h-8 text-purple-600" />
+            Quản Lý Bài Viết
+          </h2>
+          <p className="text-gray-500 mt-1 ml-10">
+            Quản lý danh sách bài viết blog trong hệ thống
+          </p>
+        </div>
+        <button
+          onClick={() => handleOpenDialog()}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+        >
+          <Plus className="w-4 h-4" /> Thêm bài viết
+        </button>
+      </div>
 
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <TextField
-                fullWidth
-                placeholder="Tìm kiếm bài viết..."
-                value={searchQuery}
-                onChange={handleSearch}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon className="text-gray-400" />
-                    </InputAdornment>
-                  ),
-                }}
-                variant="outlined"
-              />
+      {/* Filters */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm bài viết..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+          />
+        </div>
 
-              <TextField
-                select
-                label="Trạng thái"
-                value={statusFilter}
-                onChange={handleStatusFilter}
-                variant="outlined"
-                fullWidth
-              >
-                <MenuItem value="">Tất cả trạng thái</MenuItem>
-                <MenuItem value="DRAFT">Bản nháp</MenuItem>
-                <MenuItem value="PUBLISHED">Đã xuất bản</MenuItem>
-                <MenuItem value="ARCHIVED">Lưu trữ</MenuItem>
-              </TextField>
+        {/* Status Select */}
+        <div className="relative">
+          <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <select
+            value={statusFilter}
+            onChange={handleStatusFilter}
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none transition-all cursor-pointer"
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="DRAFT">Bản nháp</option>
+            <option value="PUBLISHED">Đã xuất bản</option>
+            <option value="ARCHIVED">Lưu trữ</option>
+          </select>
+        </div>
 
-              <TextField
-                label="Danh mục"
-                value={categoryFilter}
-                onChange={handleCategoryFilter}
-                variant="outlined"
-                fullWidth
-                placeholder="Nhập danh mục..."
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Category Input */}
+        <input
+          type="text"
+          placeholder="Lọc theo danh mục..."
+          value={categoryFilter}
+          onChange={handleCategoryFilter}
+          className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+        />
+      </div>
 
-        {/* Table */}
-        <Card className="shadow-lg">
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow className="bg-gray-50">
-                  <TableCell className="font-semibold">Ảnh</TableCell>
-                  <TableCell className="font-semibold">Tiêu đề</TableCell>
-                  <TableCell className="font-semibold">Danh mục</TableCell>
-                  <TableCell className="font-semibold">Trạng thái</TableCell>
-                  <TableCell className="font-semibold">Xuất bản</TableCell>
-                  <TableCell className="font-semibold">Lượt xem</TableCell>
-                  <TableCell className="font-semibold">Ngày tạo</TableCell>
-                  <TableCell className="font-semibold">Thao tác</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <Typography>Đang tải...</Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : blogs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <Typography color="textSecondary">
-                        Không có bài viết nào
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  blogs.map((blog) => (
-                    <TableRow key={blog._id} hover>
-                      <TableCell>
-                        <Avatar
-                          src={blog.imgUrl}
-                          alt={blog.title?.text}
-                          variant="rounded"
-                          className="w-16 h-16"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <Typography
-                            variant="subtitle2"
-                            className="font-medium"
-                          >
-                            {blog.title?.text || blog.title}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            color="textSecondary"
-                            className="mt-1"
-                          >
-                            {stripHtml(blog.excerpt || blog.content)?.substring(
-                              0,
-                              80
+      {/* Table */}
+      <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Ảnh
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Tiêu đề
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Danh mục
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Trạng thái
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Xuất bản
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Lượt xem
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Ngày tạo
+                </th>
+                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-8 text-gray-500">
+                    Đang tải...
+                  </td>
+                </tr>
+              ) : blogs.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-8 text-gray-500">
+                    Không có bài viết nào
+                  </td>
+                </tr>
+              ) : (
+                blogs.map((blog) => (
+                  <tr
+                    key={blog._id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <img
+                        src={blog.imgUrl}
+                        alt={blog.title?.text}
+                        className="w-16 h-12 object-cover rounded-md border border-gray-200"
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 line-clamp-1">
+                          {blog.title?.text || blog.title}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                          {stripHtml(blog.excerpt || blog.content)}
+                        </p>
+                        {blog.tags && blog.tags.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {blog.tags.slice(0, 2).map((tag, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full border border-gray-200"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {blog.tags.length > 2 && (
+                              <span className="text-xs text-gray-400">
+                                +{blog.tags.length - 2}
+                              </span>
                             )}
-                            ...
-                          </Typography>
-                          {blog.tags && blog.tags.length > 0 && (
-                            <div className="mt-2">
-                              {blog.tags.slice(0, 2).map((tag, index) => (
-                                <Chip
-                                  key={index}
-                                  label={tag}
-                                  size="small"
-                                  variant="outlined"
-                                  className="mr-1"
-                                />
-                              ))}
-                              {blog.tags.length > 2 && (
-                                <Typography
-                                  variant="caption"
-                                  color="textSecondary"
-                                >
-                                  +{blog.tags.length - 2} thẻ khác
-                                </Typography>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={blog.category}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getStatusLabel(blog.status)}
-                          color={getStatusColor(blog.status)}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={blog.isPublished || false}
-                              onChange={() => handlePublishToggle(blog)}
-                              color="primary"
-                            />
-                          }
-                          label=""
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {blog.views || 0}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {formatDate(blog.createdAt)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-1">
-                          <Tooltip title="Chỉnh sửa">
-                            <IconButton
-                              onClick={() => handleOpenDialog(blog)}
-                              color="primary"
-                              size="small"
-                            >
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Xóa">
-                            <IconButton
-                              onClick={() => {
-                                setSelectedBlog(blog);
-                                setOpenDeleteDialog(true);
-                              }}
-                              color="error"
-                              size="small"
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-full border border-purple-100 font-medium">
+                        {blog.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full font-medium border ${getStatusColor(
+                          blog.status
+                        )}`}
+                      >
+                        {getStatusLabel(blog.status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={blog.isPublished || false}
+                            onChange={() => handlePublishToggle(blog)}
+                            color="primary"
+                            size="small"
+                          />
+                        }
+                        label=""
+                      />
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {blog.views || 0}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {formatDate(blog.createdAt)}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center space-x-2">
+                        <button
+                          onClick={() => handleOpenDialog(blog)}
+                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Chỉnh sửa"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedBlog(blog);
+                            setOpenDeleteDialog(true);
+                          }}
+                          className="text-gray-400 hover:text-red-600 transition-colors"
+                          title="Xóa"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <Box className="flex justify-center items-center py-4 border-t">
-              <div className="flex items-center space-x-2">
-                <Button
-                  disabled={currentPage === 1}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  variant="outlined"
-                  size="small"
-                >
-                  Trước
-                </Button>
-                <Typography className="mx-4">
-                  Trang {currentPage} / {totalPages}
-                </Typography>
-                <Button
-                  disabled={currentPage === totalPages}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  variant="outlined"
-                  size="small"
-                >
-                  Sau
-                </Button>
-              </div>
-            </Box>
-          )}
-        </Card>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <span className="text-sm text-gray-500">
+              Trang {currentPage} / {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                className="px-3 py-1.5 flex items-center gap-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              >
+                <ChevronLeft className="w-4 h-4" /> Trước
+              </button>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+                className="px-3 py-1.5 flex items-center gap-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              >
+                Sau <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Blog Form Dialog */}
@@ -650,18 +608,18 @@ export default function Blogs() {
         maxWidth="lg"
         fullWidth
         PaperProps={{
-          className: "min-h-[90vh]",
+          className: "min-h-[90vh] rounded-xl",
         }}
       >
-        <DialogTitle className="flex justify-between items-center">
-          <Typography variant="h6">
+        <DialogTitle className="flex justify-between items-center border-b p-4">
+          <span className="font-bold text-gray-800">
             {isEditing ? "Chỉnh sửa bài viết" : "Thêm bài viết mới"}
-          </Typography>
-          <IconButton onClick={handleCloseDialog}>
+          </span>
+          <IconButton onClick={handleCloseDialog} size="small">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent className="p-6">
           <BlogForm
             formData={formData}
             errors={errors}
@@ -681,18 +639,33 @@ export default function Blogs() {
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
+        PaperProps={{ className: "rounded-xl" }}
       >
-        <DialogTitle>Xác nhận xóa bài viết</DialogTitle>
+        <DialogTitle className="font-bold text-gray-900">
+          Xác nhận xóa bài viết
+        </DialogTitle>
         <DialogContent>
-          <Typography>
+          <p className="text-gray-600">
             Bạn có chắc chắn muốn xóa bài viết "
-            {selectedBlog?.title?.text || selectedBlog?.title}"? Hành động này
-            không thể hoàn tác.
-          </Typography>
+            <span className="font-semibold text-gray-900">
+              {selectedBlog?.title?.text || selectedBlog?.title}
+            </span>
+            "? Hành động này không thể hoàn tác.
+          </p>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDeleteDialog(false)}>Hủy</Button>
-          <Button onClick={handleDeleteBlog} color="error" variant="contained">
+        <DialogActions className="p-4 bg-gray-50 border-t">
+          <Button
+            onClick={() => setOpenDeleteDialog(false)}
+            className="text-gray-600"
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleDeleteBlog}
+            color="error"
+            variant="contained"
+            className="bg-red-600 hover:bg-red-700 shadow-sm"
+          >
             Xóa
           </Button>
         </DialogActions>
@@ -709,6 +682,7 @@ export default function Blogs() {
           onClose={handleCloseNotification}
           severity={notification.type}
           variant="filled"
+          className="shadow-lg rounded-lg"
         >
           {notification.message}
         </Alert>

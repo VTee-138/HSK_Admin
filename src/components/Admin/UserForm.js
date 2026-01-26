@@ -14,60 +14,58 @@ export default function UserForm({
   handleUpdateUser,
 }) {
   return (
-    <div className="p-6 max-w-3xl mx-auto bg-white shadow-lg rounded-lg mb-[50px]">
-      <h2 className="text-2xl font-bold text-center mb-6">
+    <div className="p-8 max-w-4xl mx-auto bg-white shadow-sm border border-gray-100 rounded-2xl mb-8">
+      <h2 className="text-xl font-bold text-gray-900 mb-8 flex items-center gap-2">
+        <span className="w-1 h-8 bg-blue-600 rounded-full inline-block"></span>
         {isEditing
           ? "Cập nhật thông tin người dùng"
           : "Tạo tài khoản người dùng"}
       </h2>
-      <div className="mb-5 flex justify-around flex-wrap">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
         <TextField
           label="Email *"
           name="email"
           value={formData?.email}
-          className="md:w-[300px] w-[100%] lg:mb-0 mb-5 label-text"
+          fullWidth
           onChange={handleChangeInputUser}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <EmailIcon />
+                <EmailIcon className="text-gray-400" />
               </InputAdornment>
             ),
           }}
-          variant="standard"
+          variant="outlined"
         />
         <TextField
           label="Tên người dùng *"
           name="fullName"
           value={formData?.fullName}
           onChange={handleChangeInputUser}
-          className="md:w-[300px] w-[100%] label-text"
+          fullWidth
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <Person3Icon />
+                <Person3Icon className="text-gray-400" />
               </InputAdornment>
             ),
           }}
-          variant="standard"
+          variant="outlined"
         />
-      </div>
-
-      <div className="mb-5 flex justify-around flex-wrap">
         <TextField
           label="Password *"
           name="password"
           value={formData?.password}
-          className="md:w-[300px] w-[100%] lg:mb-0 mb-5 label-text"
+          fullWidth
           onChange={handleChangeInputUser}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <PasswordIcon />
+                <PasswordIcon className="text-gray-400" />
               </InputAdornment>
             ),
           }}
-          variant="standard"
+          variant="outlined"
         />
         <TextField
           select
@@ -77,17 +75,14 @@ export default function UserForm({
             formData?.role === 1 ? "Admin" : formData?.role === 0 ? "User" : ""
           }
           onChange={handleChangeInputUser}
-          className="label-text md:w-[300px] w-[100%] lg:mb-0 mb-5"
-          variant="standard"
+          fullWidth
+          variant="outlined"
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <AdminPanelSettingsIcon />
+                <AdminPanelSettingsIcon className="text-gray-400" />
               </InputAdornment>
             ),
-          }}
-          InputLabelProps={{
-            shrink: true,
           }}
         >
           {["Admin", "User"].map((option, key) => (
@@ -98,28 +93,22 @@ export default function UserForm({
         </TextField>
       </div>
 
-      <div className="mb-5 flex justify-around flex-wrap px-[130px]">
-        {isEditing ? (
-          <Button
-            variant="contained"
-            component="label"
-            className="label-text md:w-[250px] w-[100%] py-[10px]"
-            startIcon={<CloudUploadIcon />}
-            onClick={handleUpdateUser}
-          >
-            Cập nhật tài khoản
-          </Button>
-        ) : (
-          <Button
-            variant="contained"
-            component="label"
-            className="label-text md:w-[200px] w-[100%] py-[10px]"
-            startIcon={<CloudUploadIcon />}
-            onClick={handleInsertUser}
-          >
-            Tạo tài khoản
-          </Button>
-        )}
+      <div className="flex justify-end pt-4 border-t border-gray-100">
+        <Button
+          variant="contained"
+          size="large"
+          startIcon={<CloudUploadIcon />}
+          onClick={isEditing ? handleUpdateUser : handleInsertUser}
+          sx={{
+             backgroundImage: "linear-gradient(to right, #2563eb, #1d4ed8)",
+             textTransform: "none",
+             borderRadius: "0.75rem",
+             padding: "10px 30px",
+             boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.2)"
+          }}
+        >
+          {isEditing ? "Cập nhật tài khoản" : "Tạo tài khoản"}
+        </Button>
       </div>
     </div>
   );

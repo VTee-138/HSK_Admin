@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Edit2, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Edit2,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  FileText,
+} from "lucide-react";
 import dayjs from "dayjs";
 import {
   checkLatexContent,
   extractQuestionRange,
   isBreak,
   isTitleAnswers,
-  isValidateContentQuestion,
   toLowerCaseNonAccentVietnamese,
-  validateGoogleDriveUrl,
 } from "../../common/Utils";
 import { toast } from "react-toastify";
-import axios from "axios";
 import {
   activeExam,
   deleteExam,
@@ -42,13 +45,9 @@ export default function Exams() {
     url: "",
     numberOfQuestions: null,
     time: null,
-    startTime: dayjs(new Date()),
-    endTime: dayjs(new Date()),
-    subject: "Toán",
-    type: "THPT",
-    imgUrrl: "",
+    type: "HSK1",
+    imgUrl: "",
     access: "PRIVATE",
-    typeOfExam: "ĐỀ THI",
   });
 
   const refs = {
@@ -62,10 +61,8 @@ export default function Exams() {
   const [totalPages, setTotalPages] = useState(1);
   const limit = 6;
   const [isEditing, setIsEditing] = useState(null);
-  const [isSearch, setIsSearch] = useState(false);
   const [openDialogQuestion, setOpenDialogQuestion] = useState(false);
   const [openDialogExam, setOpenDialogExam] = useState(false);
-  const [rows, setRows] = useState([]);
   const [listExams, setListExams] = useState([]);
   const [answer, setAnswer] = useState({});
   const [listKeys, setListKeys] = useState([]);
@@ -89,11 +86,10 @@ export default function Exams() {
   const indexOfFirstExam = indexOfLastExam - examsPerPage;
   const [searchQuery, setSearchQuery] = useState("");
   const [examTypeOptions, setExamTypeOptions] = useState([
-    "THPT",
-    "TSA",
-    "HSA",
-    "APT",
-    "OTHER EXAMS",
+    "HSK1",
+    "HSK2",
+    "HSK3",
+    "HSK4",
   ]);
 
   const handleDeleteExam = async (id) => {
@@ -887,124 +883,10 @@ export default function Exams() {
     if (currentQuestion) {
       questionsArray.push(currentQuestion);
     }
-
-    const resultvalidateQuestion = validateQuestion(questionsArray);
-    if (!resultvalidateQuestion?.flag) {
-      resultvalidateQuestion.messageArr.forEach((message) =>
-        toast.error(message || "Lỗi", {
-          autoClose: 25000, // 25 giây
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        })
-      );
-
-      return [];
-    }
     toast.success("Nhập câu hỏi thành công");
     return questionsArray;
   }
 
-  const validateQuestion = (questionsArray) => {
-    let flag = true;
-    let messageArr = [];
-    const listQ = questionsArray.filter((question) => question?.type !== "MQ");
-    if (formQuestionData.type === "THPT") {
-      if (listQ.length !== 22 && formQuestionData.subject === "Toán") {
-        flag = false;
-        messageArr.push("Đề THPT Toán phải có đầy đủ 22 câu hỏi");
-      } else if (listQ.length !== 28 && formQuestionData.subject === "Lý") {
-        flag = false;
-        messageArr.push("Đề THPT Lý phải có đầy đủ 28 câu hỏi");
-      } else if (listQ.length !== 28 && formQuestionData.subject === "Hóa") {
-        flag = false;
-        messageArr.push("Đề THPT Hóa phải có đầy đủ 28 câu hỏi");
-      } else if (listQ.length !== 28 && formQuestionData.subject === "Sinh") {
-        flag = false;
-        messageArr.push("Đề THPT Sinh phải có đầy đủ 28 câu hỏi");
-      } else if (listQ.length !== 40 && formQuestionData.subject === "Anh") {
-        flag = false;
-        messageArr.push("Đề THPT Anh phải có đầy đủ 40 câu hỏi");
-      }
-    } else if (formQuestionData.type === "TSA") {
-      if (listQ.length !== 40) {
-        flag = false;
-        messageArr.push("Đề TSA phải có đầy đủ 40 câu hỏi");
-      }
-    } else if (formQuestionData.type === "HSA") {
-      if (listQ.length !== 40) {
-        flag = false;
-        messageArr.push("Đề HSA phải có đầy đủ 50 câu hỏi");
-      }
-    } else if (formQuestionData.type === "APT") {
-      if (listQ.length !== 30) {
-        flag = false;
-        messageArr.push("Đề APT phải có đầy đủ 30 câu hỏi");
-      }
-    }
-
-    for (let index = 0; index < questionsArray.length; index++) {
-      const question = questionsArray[index];
-      if (isValidateContentQuestion(question?.contentQuestions)) {
-        flag = false;
-        messageArr.push(question?.question + ": Nội dung câu hỏi bị sai");
-      }
-      if (question?.type === "TN") {
-        if (
-          !question?.contentAnswerA ||
-          !question?.contentAnswerB ||
-          !question?.contentAnswerC ||
-          !question?.contentAnswerD
-        ) {
-          flag = false;
-          messageArr.push(
-            question?.question +
-              ": Câu trắc nghiệm bị thiếu đáp án A, B, C hoặc D"
-          );
-        }
-      }
-      if (question?.type === "TLN_M") {
-        if (!question?.contentY1 || !question?.contentY2) {
-          flag = false;
-          messageArr.push(
-            question?.question +
-              ": Câu hỏi trả lời nhiều mệnh đề bị thiếu mệnh đề 1, 2"
-          );
-        }
-      } else if (question?.type === "MA") {
-        if (!question?.contentC1 || !question?.contentC2) {
-          flag = false;
-          messageArr.push(
-            question?.question +
-              ": Câu hỏi chọn nhiều đáp án bị thiếu nội dung đáp án tích chọn 1, 2"
-          );
-        }
-      } else if (question?.type === "DS") {
-        if (!question?.contentYA || !question?.contentYB) {
-          flag = false;
-          messageArr.push(
-            question?.question + ": Câu hỏi đúng sai bị thiếu mệnh đề a), b)"
-          );
-        }
-      } else if (question?.type === "KT") {
-        if (
-          !question?.contentY1 ||
-          !question?.contentY2 ||
-          !question?.items[0] ||
-          !question?.items[1] ||
-          !question?.items[2] ||
-          !question?.items[4]
-        ) {
-          flag = false;
-          messageArr.push(
-            question?.question +
-              ": Câu hỏi kéo thả thiếu một số đáp án kéo thả hoặc mệnh đề"
-          );
-        }
-      }
-    }
-    return { flag, messageArr };
-  };
   const handleEditExam = (exam) => {
     setIsEditing(true);
     setFormData({
@@ -1075,20 +957,6 @@ export default function Exams() {
     }
   };
 
-  const handleChangeDateStartTime = (date) => {
-    setFormData({
-      ...formQuestionData,
-      startTime: date,
-    });
-  };
-
-  const handleChangeDateEndTime = (date) => {
-    setFormData({
-      ...formQuestionData,
-      endTime: date,
-    });
-  };
-
   const handleInsertExam = async () => {
     if (!validateForm()) {
       return;
@@ -1119,14 +987,9 @@ export default function Exams() {
         toast.success(res.message);
         setFormData({
           title: "",
-          url: "",
-          numberOfQuestions: null,
           time: null,
-          startTime: dayjs(new Date()),
-          endTime: dayjs(new Date()),
-          subject: "Toán",
-          type: "THPT",
-          imgUrrl: "",
+          type: "HSK1",
+          imgUrl: "",
         });
         setDataInputQuestion("", []);
         setQuestionsData([]);
@@ -1135,35 +998,6 @@ export default function Exams() {
     } catch (error) {
       const message = error?.response?.data?.message;
       toast.error(message);
-    }
-  };
-
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0]; // Lấy file từ input
-
-    if (file) {
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        try {
-          const json = JSON.parse(e.target.result); // Parse nội dung JSON
-          setAnswer(json); // Cập nhật trạng thái với dữ liệu từ JSON
-          toast.success("Upload file đáp án thành công");
-        } catch (error) {
-          console.error("Error parsing JSON:", error);
-          // Xử lý lỗi nếu cần, ví dụ như hiển thị thông báo cho người dùng
-        } finally {
-          refs.inputRef.current.value = null;
-        }
-      };
-
-      reader.onerror = (e) => {
-        console.error("File could not be read:", e.target.error);
-        refs.inputRef.current.value = null;
-        // Xử lý lỗi đọc file
-      };
-
-      reader.readAsText(file); // Đọc file dưới dạng text
     }
   };
 
@@ -1177,15 +1011,6 @@ export default function Exams() {
       toast.error("Vui lòng nhập kì thi");
       return false;
     }
-    // if (!formQuestionData.url) {
-    //   toast.error("Vui lòng nhập link đề thi");
-    //   return false;
-    // }
-
-    // if (!validateGoogleDriveUrl(formQuestionData.url)) {
-    //   toast.error("Link đề thi không hợp lệ.");
-    //   return false;
-    // }
 
     if (!formQuestionData.numberOfQuestions) {
       toast.error("Vui lòng nhập số câu hỏi");
@@ -1208,6 +1033,7 @@ export default function Exams() {
     }
     return true;
   };
+
   const handleUpdateExam = async () => {
     const body = {
       ...formQuestionData,
@@ -1236,11 +1062,8 @@ export default function Exams() {
           url: "",
           numberOfQuestions: null,
           time: null,
-          startTime: dayjs(new Date()),
-          endTime: dayjs(new Date()),
-          subject: "Toán",
-          type: "THPT",
-          imgUrrl: "",
+          type: "HSK1",
+          imgUrl: "",
         });
         setDataInputQuestion("", []);
         setQuestionsData(null);
@@ -1302,39 +1125,160 @@ export default function Exams() {
     }
   };
 
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-    // if (!e.target.value) {
-    //   setIsSearch(false);
-    // }
-  };
-
-  const handleSearch = () => {
-    if (searchQuery) {
-      setIsSearch(true);
-    } else {
-      setIsSearch(false);
-    }
-    setCurrentPage(1); // Reset page on search
-    handleFetch(); // Fetch data with query
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      if (searchQuery) {
-        setIsSearch(true);
-      } else {
-        setIsSearch(false);
-      }
-      handleSearch(); // Trigger search when Enter is pressed
-    }
-  };
   return (
-    <div className="p-[30px] overflow-auto bg-gradient-to-br from-blue-50 to-indigo-100">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800">
-        Quản Lý Đề Thi Thử
-      </h2>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <FileText className="w-8 h-8 text-red-600" />
+          Exam Management
+        </h2>
+      </div>
 
+      {/* Exam Table */}
+      <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  No
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Exam Name
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Subject
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Time
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Created At
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {listExams.length > 0 &&
+                listExams.map((exam, index) => (
+                  <tr
+                    key={exam?._id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <Tooltip title={exam?._id} placement="top">
+                      {" "}
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {exam?._id?.slice(0, 5)}...{exam?._id?.slice(-5)}
+                      </td>
+                    </Tooltip>
+
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {exam?.title?.text}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                        {exam?.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {exam?.subject}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {exam?.time} mins
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {new Date(exam?.createdAt).toLocaleDateString(
+                        "vi-VN",
+                        configDate
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                          exam.active === true
+                            ? "bg-green-50 text-green-700 border-green-100"
+                            : "bg-red-50 text-red-700 border-red-100"
+                        }`}
+                      >
+                        {exam.active == true ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center space-x-3">
+                        <button
+                          onClick={() => handleEditExam(exam)}
+                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Edit Exam"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(exam?._id)}
+                          className={`transition-colors ${
+                            exam?.active === true
+                              ? "text-gray-400 hover:text-red-500"
+                              : "text-gray-400 hover:text-green-500"
+                          }`}
+                          title={
+                            exam?.active === true ? "Deactivate" : "Activate"
+                          }
+                        >
+                          {exam?.active === true ? (
+                            <XCircle className="w-4 h-4" />
+                          ) : (
+                            <CheckCircle2 className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteExam(exam?._id)}
+                          className="text-gray-400 hover:text-red-600 transition-colors"
+                          title="Delete Exam"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+          <span className="text-sm text-gray-500">
+            Page {`${currentPage} / ${totalPages}`}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() =>
+                setCurrentPage((p) => (p < totalPages ? p + 1 : p))
+              }
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
       {/* Exam Form */}
       <ExamForm
         formQuestionData={formQuestionData}
@@ -1353,152 +1297,12 @@ export default function Exams() {
         setOpenDialogExam={setOpenDialogExam}
         openDialogExam={openDialogExam}
         upLoadImageQuestions={upLoadImageQuestions}
-        handleChangeDateStartTime={handleChangeDateStartTime}
-        handleChangeDateEndTime={handleChangeDateEndTime}
-        handleFileUpload={handleFileUpload}
         handleInsertExam={handleInsertExam}
         handleUpdateExam={handleUpdateExam}
         upLoadImageExam={upLoadImageExam}
         isEditing={isEditing}
         examTypeOptions={examTypeOptions}
       />
-      {/* Search Input */}
-      <div className="mb-4 flex items-center space-x-2">
-        <input
-          type="text"
-          placeholder="Tìm kiếm đề thi..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onKeyPress={handleKeyPress} // Listen for Enter key
-          className="w-96 px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring"
-        />
-        <button
-          onClick={handleSearch}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md"
-        >
-          Search
-        </button>
-      </div>
-
-      {/* Exam Table */}
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <div className="max-h-96 overflow-y-auto">
-          {" "}
-          {/* Thêm cuộn dọc nếu có quá nhiều hàng */}
-          <table className="w-full">
-            <thead className="bg-gray-100 border-b">
-              <tr>
-                <th className="p-3 text-left">No</th>
-                <th className="p-3 text-left">Exam Name</th>
-                <th className="p-3 text-left">Type</th>
-                <th className="p-3 text-left">Subject</th>
-                <th className="p-3 text-left">Time</th>
-                <th className="p-3 text-left">Created At</th>
-                <th className="p-3 text-left">Status</th>
-                <th className="p-3 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {listExams.length > 0 &&
-                listExams.map((exam, index) => (
-                  <tr
-                    key={exam?._id}
-                    className="border-b hover:bg-gray-50 transition"
-                  >
-                    <Tooltip title={exam?._id} placement="top">
-                      {" "}
-                      <td className="p-3">
-                        {exam?._id?.slice(0, 5)}...{exam?._id?.slice(-5)}
-                      </td>
-                    </Tooltip>
-
-                    <td className="p-3">{exam?.title?.text}</td>
-                    <td className="p-3">{exam?.type}</td>
-                    <td className="p-3">{exam?.subject}</td>
-                    <td className="p-3">{exam?.time}</td>
-                    <td className="p-3">
-                      {new Date(exam?.createdAt).toLocaleDateString(
-                        "vi-VN",
-                        configDate
-                      )}
-                    </td>
-                    <td className="p-3">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          exam.active === true
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {exam.active == true ? "Activate" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center justify-center space-x-2 h-full min-h-[40px]">
-                        <button
-                          onClick={() => handleEditExam(exam)}
-                          className="text-blue-500 hover:text-blue-700 transition"
-                          title="Edit Exam"
-                        >
-                          <Edit2 className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteExam(exam?._id)}
-                          className="text-red-500 hover:text-red-700 transition"
-                          title="Delete Exam"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleToggleStatus(exam?._id)}
-                          className={`${
-                            exam?.active === true
-                              ? "text-red-500 hover:text-red-700"
-                              : "text-green-500 hover:text-green-700"
-                          } transition`}
-                          title={
-                            exam?.active === true ? "Deactivate" : "Activate"
-                          }
-                        >
-                          {exam?.active === true ? (
-                            <XCircle className="w-5 h-5" />
-                          ) : (
-                            <CheckCircle2 className="w-5 h-5" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="flex justify-between p-4 items-center">
-          <span>
-            Page {isSearch ? "1 / 1" : `${currentPage} / ${totalPages}`}
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1 || isSearch}
-              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() =>
-                setCurrentPage((p) => (p < totalPages ? p + 1 : p))
-              }
-              disabled={currentPage === totalPages || isSearch}
-              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

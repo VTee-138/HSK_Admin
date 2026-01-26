@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, Trash2, Search } from "lucide-react";
 import { toast } from "react-toastify";
 import UserForm from "./UserForm";
 import { createUser, deleteUser, getUsers } from "../../services/UserService";
@@ -177,12 +177,12 @@ export default function Users() {
     }
   };
   return (
-    <div className="p-[30px] overflow-auto">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800">
+    <div className="p-6 max-w-7xl mx-auto">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">
         Quản Lý Người Dùng
       </h2>
 
-      {/* user Form */}
+      {/* User Form */}
       <UserForm
         isEditing={isEditing}
         formData={formData}
@@ -190,111 +190,126 @@ export default function Users() {
         handleChangeInputUser={handleChangeInputUser}
         handleUpdateUser={handleUpdateUser}
       />
+
       {/* Search Input */}
-      <div className="mb-4 flex items-center space-x-2">
-        <input
-          type="text"
-          placeholder="Tìm kiếm người dúng.."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onKeyPress={handleKeyPress} // Listen for Enter key
-          className="w-96 px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring"
-        />
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between mb-6">
+        <div className="relative w-full max-w-xl">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo email, tên..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onKeyPress={handleKeyPress}
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
         <button
           onClick={handleSearch}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md"
+          className="ml-4 px-6 py-2 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
         >
-          Search
+          Tìm kiếm
         </button>
       </div>
 
-      {/* user Table */}
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <div className="max-h-96 overflow-y-auto">
-          {" "}
-          {/* Thêm cuộn dọc nếu có quá nhiều hàng */}
+      {/* Users Table */}
+      <div className="bg-white shadow-sm border border-gray-100 rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-100 border-b">
+            <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="p-3 text-left">No</th>
-                <th className="p-3 text-left">Email</th>
-                <th className="p-3 text-left">User</th>
-                <th className="p-3 text-left">Role</th>
-                {/* <th className="p-3 text-left">Time</th> */}
-                <th className="p-3 text-left">Created At</th>
-                <th className="p-3 text-center">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tên người dùng</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vai trò</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Hành động</th>
               </tr>
             </thead>
-            <tbody>
-              {listUsers.length > 0 &&
-                listUsers.map((user, index) => (
-                  <tr
-                    key={user?._id}
-                    className="border-b hover:bg-gray-50 transition"
-                  >
-                    <Tooltip title={user?._id} placement="top">
-                      <td className="p-3">
-                        {" "}
-                        {user?._id?.slice(0, 5)}...{user?._id?.slice(-5)}
-                      </td>
-                    </Tooltip>
-                    <td className="p-3">{user?.email}</td>
-                    <td className="p-3">{user?.name}</td>
-                    <td className="p-3">
-                      {user?.role === 1 ? "Admin" : "User"}
+            <tbody className="divide-y divide-gray-100">
+              {listUsers.length > 0 ? (
+                listUsers.map((user) => (
+                  <tr key={user?._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Tooltip title={user?._id} placement="top">
+                        <span className="text-sm font-medium text-gray-900 cursor-help bg-gray-100 px-2 py-1 rounded">
+                          {user?._id?.slice(0, 5)}...{user?._id?.slice(-5)}
+                        </span>
+                      </Tooltip>
                     </td>
-                    <td className="p-3">
-                      {new Date(user?.createdAt).toLocaleDateString(
-                        "vi-VN",
-                        configDate
-                      )}
+                    <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                      {user?.email}
                     </td>
-
-                    <td className="p-3">
-                      <div className="flex items-center justify-center space-x-2 h-full min-h-[40px]">
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
+                            {user?.name?.charAt(0)?.toUpperCase()}
+                         </div>
+                         {user?.name}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user?.role === 1 
+                          ? 'bg-purple-100 text-purple-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {user?.role === 1 ? "Admin" : "User"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(user?.createdAt).toLocaleDateString("vi-VN", configDate)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => handleEditUser(user)}
-                          className="text-blue-500 hover:text-blue-700 transition"
-                          title="Edit User"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Sửa"
                         >
-                          <Edit2 className="w-5 h-5" />
+                          <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDeleteUser(user?._id)}
-                          className="text-red-500 hover:text-red-700 transition"
-                          title="Delete user"
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Xóa"
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                    Không tìm thấy dữ liệu
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        <div className="flex justify-between p-4 items-center">
-          <span>
-            Page {isSearch ? "1 / 1" : `${currentPage} / ${totalPages}`}
+        <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-100">
+          <span className="text-sm text-gray-700">
+            Trang <span className="font-medium">{isSearch ? "1" : currentPage}</span> / <span className="font-medium">{isSearch ? "1" : totalPages}</span>
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1 || isSearch}
-              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Previous
+              Trước
             </button>
             <button
-              onClick={() =>
-                setCurrentPage((p) => (p < totalPages ? p + 1 : p))
-              }
+              onClick={() => setCurrentPage((p) => (p < totalPages ? p + 1 : p))}
               disabled={currentPage === totalPages || isSearch}
-              className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Next
+              Sau
             </button>
           </div>
         </div>
