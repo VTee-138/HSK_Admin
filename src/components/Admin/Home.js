@@ -3,31 +3,20 @@ import {
   LayoutDashboard,
   Users,
   ChevronRight,
-  Bell,
   Search,
-  Activity,
   ShoppingCart,
   FileText,
-  Building2,
   FolderOpen,
-  GraduationCap,
   BookOpen,
-  MessageSquare,
 } from "lucide-react";
 import Exams from "./Exams";
 import UsersComponent from "./Users";
-import ExamRooms from "./ExamRooms";
-import Categories from "./Categories";
-import Courses from "./Courses";
 import Blogs from "./Blogs";
-import Contacts from "./Contacts";
 import Orders from "./Orders";
-import { DocumentScanner } from "@mui/icons-material";
 import { getUserInfoById } from "../../services/UserService";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Dashboard from "./Dashboard";
-import Documents from "./Documents";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 const Home = () => {
@@ -82,22 +71,12 @@ const Home = () => {
         return <Dashboard />;
       case "Users":
         return <UsersComponent />;
-      case "Courses":
-        return <Courses />;
-      case "Documents":
-        return <Documents />;
       case "Blogs":
         return <Blogs />;
-      case "Contacts":
-        return <Contacts />;
       case "Orders":
         return <Orders />;
       case "Exams":
         return <Exams />;
-      case "Exam Rooms":
-        return <ExamRooms />;
-      case "Categories":
-        return <Categories />;
       default:
         return null;
     }
@@ -136,14 +115,13 @@ const Home = () => {
             {[
               { icon: LayoutDashboard, label: "Dashboard" },
               { icon: Users, label: "Users" },
-              { icon: GraduationCap, label: "Courses" },
-              { icon: DocumentScanner, label: "Documents" },
+              // { icon: GraduationCap, label: "Courses" },
+              // { icon: DocumentScanner, label: "Documents" },
               { icon: BookOpen, label: "Blogs" },
-              { icon: MessageSquare, label: "Contacts" },
               { icon: ShoppingCart, label: "Orders" },
               { icon: FileText, label: "Exams" },
-              { icon: Building2, label: "Exam Rooms" },
-              { icon: FolderOpen, label: "Categories" },
+              // { icon: Building2, label: "Exam Rooms" },
+              // { icon: FolderOpen, label: "Categories" },
             ].map((item, index) => (
               <li
                 key={index}

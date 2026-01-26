@@ -10,10 +10,6 @@ import {
   CardContent,
   Divider,
   Chip,
-  FormControl,
-  InputLabel,
-  Select,
-  OutlinedInput,
 } from "@mui/material";
 import {
   CloudUpload as CloudUploadIcon,

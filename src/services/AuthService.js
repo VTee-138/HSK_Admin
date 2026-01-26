@@ -1,5 +1,5 @@
-import jwtDecode from "jwt-decode";
-import { get, post } from "../common/apiClient";
+import { jwtDecode } from "jwt-decode";
+import { post } from "../common/apiClient";
 
 const PATH_AUTH = "/auth";
 const login = async (body) => {

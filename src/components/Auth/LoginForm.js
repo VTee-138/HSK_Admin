@@ -53,27 +53,29 @@ const LoginForm = () => {
       return;
     }
     try {
-      // setLoading(true);
+      setLoading(true);
       const response = await login({
         email,
         password,
       });
 
-      if (response && response.token) {
-        console.log(" handleSubmit ~ response:", response);
-        const { token } = response;
-        if (token) {
-          localStorage.setItem("jwt", JSON.stringify({ token }));
-          navigate(from, { replace: true });
-        } else {
-          toast.error("Lỗi không mong muốn trong quá trình xử lý đăng nhập");
-        }
+      if (response?.success && response?.token) {
+        const { token, user } = response;
+        
+        // Lưu token và thông tin user vào localStorage
+        localStorage.setItem("jwt", JSON.stringify({ token }));
+        localStorage.setItem("user", JSON.stringify(user));
+        
+        toast.success(`Chào mừng ${user.fullName || 'bạn'}!`);
+        navigate(from, { replace: true });
+      } else {
+        toast.error("Đăng nhập thất bại. Vui lòng thử lại.");
       }
     } catch (error) {
-      const message = error?.response?.data?.message;
+      const message = error?.response?.data?.message || "Đã xảy ra lỗi khi đăng nhập";
       toast.error(message);
     } finally {
-      // setLoading(false);
+      setLoading(false);
     }
   };
 

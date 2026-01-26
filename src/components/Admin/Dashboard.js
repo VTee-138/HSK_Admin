@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Users, Activity, ShoppingCart, FileText } from "lucide-react";
+import { Users, FileText } from "lucide-react";
 import { totalDocuments } from "../../services/DocumentService";
 import { totalUsers } from "../../services/UserService";
 import { totalExams } from "../../services/ExamService";

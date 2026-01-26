@@ -1,12 +1,11 @@
 import axios from "axios";
-import { decryptData } from "./decryption";
 
-// const REACT_APP_API_BASE_URL = "https://gouni-server.vercel.app/api/v2";
-// const REACT_APP_API_BASE_URL = "http://localhost:4000/api/v2";
-const REACT_APP_API_BASE_URL = "https://api.gouni.edu.vn/api/v2";
+// const REACT_APP_API_BASE_URL = "https://86HSK-server.vercel.app/api/v2";
+const REACT_APP_API_BASE_URL = "http://localhost:4000/api/v2";
+// const REACT_APP_API_BASE_URL = "https://api.86HSK.edu.vn/api/v2";
 
-// export const HOSTNAME = "http://localhost:4000";
-export const HOSTNAME = "https://api.gouni.edu.vn";
+export const HOSTNAME = "http://localhost:4000";
+// export const HOSTNAME = "https://api.86HSK.edu.vn";
 
 // Tạo instance Axios
 const apiClient = axios.create({
@@ -31,7 +30,7 @@ apiClient.interceptors.request.use(
 
 // Response Interceptor
 apiClient.interceptors.response.use(
-  (response) => decryptData(response.data),
+  (response) => response.data,
   (error) => {
     if (error.response) {
       //   // Xử lý lỗi 401, 403, 500, v.v.
