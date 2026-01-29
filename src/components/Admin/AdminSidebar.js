@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
-  BookOpen, 
   FileText,
   GraduationCap,
   MoreVertical,
@@ -63,7 +62,7 @@ export default function AdminSidebar({
             <div className="bg-red-50 p-2 rounded-xl">
               <GraduationCap size={28} />
             </div>
-            <span className="text-xl font-bold tracking-tight">GOUNI ADMIN</span>
+            <span className="text-xl font-bold tracking-tight">86HSK ADMIN</span>
           </Link>
         </div>
 

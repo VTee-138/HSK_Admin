@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./Login.scss";
 import { Button, Stack } from "@mui/material";
 import { toast } from "react-toastify";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -22,7 +21,6 @@ const LoginForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/home";
-  const [loading, setLoading] = useState(false);
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
   const handleMouseDownPassword = (event) => {
@@ -53,7 +51,6 @@ const LoginForm = () => {
       return;
     }
     try {
-      setLoading(true);
       const response = await login({
         email,
         password,
@@ -74,9 +71,7 @@ const LoginForm = () => {
     } catch (error) {
       const message = error?.response?.data?.message || "Đã xảy ra lỗi khi đăng nhập";
       toast.error(message);
-    } finally {
-      setLoading(false);
-    }
+    } finally {    }
   };
 
   return (
@@ -89,7 +84,10 @@ const LoginForm = () => {
               <i className="zmdi zmdi-font"></i>
             </span>
             <div className="mb-5">
-              <img src={logo} className="w-[90px] m-auto"></img>
+              <img 
+                  src={logo} 
+                  alt="Logo"
+                  className="w-[90px] m-auto"/>
             </div>
             <FormControl
               sx={{ width: "100%" }}

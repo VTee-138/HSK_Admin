@@ -1,25 +1,15 @@
-import {
-  Button,
-  InputAdornment,
-  MenuItem,
-  TextField,
-  Tooltip,
-  Divider,
-} from "@mui/material";
+import { Button, MenuItem, TextField, Divider } from "@mui/material";
 
 import {
   UploadCloud,
   FileText,
-  Link as LinkIcon2,
-  Image as ImageIcon,
-  Eye,
   Layers,
   CheckCircle,
+  Plus,
+  Download,
+  Trash2,
 } from "lucide-react";
 import { styled } from "@mui/material/styles";
-import AnswerQuestion from "./AnswerQuestion";
-import ViewQuestion from "./ViewQuestion";
-import ViewExam from "./ViewExam";
 
 const VisuallyHiddenInput = styled("input")({
   clip: "rect(0 0 0 0)",
@@ -33,27 +23,174 @@ const VisuallyHiddenInput = styled("input")({
   width: 1,
 });
 
-export default function ExamForm({
-  formQuestionData,
-  errors,
-  handleChangeInputQuestion,
-  question,
-  refs,
-  handleChangeUploadFileQuestions,
-  handleChangeContentQuestions,
-  handleChangeInputAnswer,
-  setOpenDialogQuestion,
-  upLoadImageQuestions,
-  openDialogQuestion,
-  handleInsertExam,
-  setOpenDialogExam,
-  openDialogExam,
-  questionsData,
-  isEditing,
-  handleUpdateExam,
-  examTypeOptions = ["HSK1", "HSK2", "HSK3", "HSK4"],
-}) {
+const QuestionPreviewItem = ({ questionItem, index }) => {
+  const { question, type, contentQuestions, imageUrl } = questionItem;
 
+  // Try to parse question number
+  let displayNum = index + 1;
+  if (question && question.match(/\d+/)) {
+    displayNum = question.match(/\d+/)[0];
+  }
+
+  return (
+    <div className="p-5 border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-all">
+      <div className="flex gap-4">
+        {/* Number in circle */}
+        <div className="flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100">
+            {displayNum}
+          </div>
+          {/* Type badge */}
+          <div className="mt-2 text-center">
+            <span className="text-[10px] font-bold text-gray-400 uppercase border border-gray-200 px-1 rounded bg-gray-50">
+              {type}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex-grow">
+          {/* Image */}
+          {imageUrl && (
+            <div className="mb-4">
+              <img
+                src={imageUrl}
+                alt="Question visual"
+                className="max-h-48 rounded-lg border border-gray-100"
+              />
+            </div>
+          )}
+
+          {/* Content */}
+          {contentQuestions && (
+            <div className="text-gray-800 mb-4 whitespace-pre-wrap leading-relaxed font-medium">
+              {contentQuestions}
+            </div>
+          )}
+
+          {/* Options TN */}
+          {type === "TN" && (
+            <div className="space-y-2">
+              {/* A-D Standard */}
+              {["A", "B", "C", "D"].map((opt) => {
+                const key = `contentAnswer${opt}`;
+                const content = questionItem[key];
+                if (!content) return null;
+                return (
+                  <div
+                    key={opt}
+                    className="flex items-start gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded"
+                  >
+                    <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-blue-400">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="font-bold text-gray-700 min-w-[1.5rem]">
+                        {opt}.
+                      </span>
+                      <span className="text-gray-600">{content}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {/* Dynamic options E-Z */}
+              {[...Array(22)].map((_, i) => {
+                const char = String.fromCharCode(69 + i);
+                const key = `contentAnswer${char}`;
+                const content = questionItem[key];
+                if (!content) return null;
+                return (
+                  <div
+                    key={char}
+                    className="flex items-start gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded"
+                  >
+                    <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-blue-400">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="font-bold text-gray-700 min-w-[1.5rem]">
+                        {char}.
+                      </span>
+                      <span className="text-gray-600">{content}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Options DS (True/False) */}
+          {type === "DS" && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded">
+                <div className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-blue-400">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+                <span className="font-bold text-gray-700">A.</span>
+                <span className="text-gray-600 font-medium">TRUE</span>
+              </div>
+              <div className="flex items-center gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded">
+                <div className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-blue-400">
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </div>
+                <span className="font-bold text-gray-700">B.</span>
+                <span className="text-gray-600 font-medium">FALSE</span>
+              </div>
+            </div>
+          )}
+
+          {/* Type MT */}
+          {type === "MT" && (
+            <div className="bg-gray-50 p-3 rounded border border-gray-100">
+              {questionItem.example &&
+                (questionItem.example.content ||
+                  questionItem.example.answer) && (
+                  <div className="mb-2 text-sm text-gray-500 italic flex gap-2">
+                    <span className="font-bold">Example:</span>
+                    <span>{questionItem.example.content}</span>
+                    <span>→</span>
+                    <span className="font-bold">
+                      {questionItem.example.answer}
+                    </span>
+                  </div>
+                )}
+              <div className="space-y-2">
+                {questionItem.subQuestions?.map((sq, idx) => (
+                  <div
+                    key={idx}
+                    className="flex gap-2 text-sm items-center bg-white p-2 rounded border border-gray-200"
+                  >
+                    <span className="font-bold text-blue-600 w-8 flex-shrink-0">
+                      {sq.question?.replace(/\D/g, "") ||
+                        parseInt(displayNum) + idx}
+                      .
+                    </span>
+                    <span className="text-gray-800">{sq.content}</span>
+                    <div className="ml-auto w-16 h-8 border border-gray-300 rounded bg-gray-50"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function ExamForm({
+  formExamData,
+  handleChangeInputQuestion,
+  addReadingQuestion,
+  addListeningQuestion,
+  addWritingQuestion,
+  handleUpsertExam,
+  questionsData,
+  importAudio,
+  handleUploadAudio,
+  handleDeleteAudio,
+  handleDownloadSample,
+  handleImportExcel,
+}) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 mt-10">
       {/* Main Form */}
@@ -69,44 +206,18 @@ export default function ExamForm({
             <TextField
               label="Tên đề thi *"
               name="title"
-              value={formQuestionData.title}
-              error={errors.title}
-              helperText={errors.title ? "Exam name is required" : ""}
+              value={formExamData.title}
               onChange={handleChangeInputQuestion}
               variant="outlined"
               fullWidth
               size="small"
             />
 
-            <Tooltip
-              title="Link đề có dạng: https://drive.google.com/file/d/xxx/view"
-              placement="top"
-            >
-              <TextField
-                label="Link đề thi"
-                name="url"
-                value={formQuestionData?.url}
-                onChange={handleChangeInputQuestion}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LinkIcon2 className="w-4 h-4 text-gray-400" />
-                    </InputAdornment>
-                  ),
-                }}
-                variant="outlined"
-                fullWidth
-                size="small"
-              />
-            </Tooltip>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <TextField
               type="number"
               label="Thời gian thi (phút) *"
               name="time"
-              value={formQuestionData?.time}
+              value={formExamData?.time}
               onChange={handleChangeInputQuestion}
               variant="outlined"
               fullWidth
@@ -120,34 +231,28 @@ export default function ExamForm({
               select
               label="Kì Thi *"
               name="type"
-              value={formQuestionData?.type}
+              value={formExamData?.type}
               onChange={handleChangeInputQuestion}
               variant="outlined"
               fullWidth
               size="small"
-              InputLabelProps={{ shrink: true }}
             >
-              {examTypeOptions.map((option, key) => (
-                <MenuItem key={key} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
+              {["HSK1", "HSK2", "HSK3", "HSK4", "HSK5", "HSK6"].map((option, key) => (
+              <MenuItem key={key} value={option}>
+                {option}
+              </MenuItem>
+            ))}
             </TextField>
-          </div>
-        </div>
 
-        <Divider className="my-8 border-gray-100" />
-        <div>
             <TextField
               select
               label="Truy cập *"
               name="access"
-              value={formQuestionData?.access}
+              value={formExamData?.access}
               onChange={handleChangeInputQuestion}
               variant="outlined"
               fullWidth
               size="small"
-              InputLabelProps={{ shrink: true }}
             >
               {["PUBLIC", "PRIVATE"].map((option, key) => (
                 <MenuItem key={key} value={option}>
@@ -155,155 +260,197 @@ export default function ExamForm({
                 </MenuItem>
               ))}
             </TextField>
+          </div>
         </div>
-
-        <Divider className="my-8 border-gray-100" />
 
         {/* Questions Section */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Layers className="w-5 h-5 text-gray-500" />
-            Quản Lý Câu Hỏi
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 flex-row justify-between">
+            <div className="flex items-center gap-2">
+              <Layers className="w-5 h-5 text-gray-500" />
+              Quản Lý Câu Hỏi
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                component="label"
+                variant="outlined"
+                className="h-10 w-fit border-blue-500 text-blue-600 hover:bg-blue-50 normal-case"
+                startIcon={<Download size={18} />}
+                fullWidth={false}
+                onClick={handleDownloadSample}
+              >
+                Download Excel Sample
+              </Button>
+              <Button
+                component="label"
+                variant="outlined"
+                className="h-10 w-fit border-blue-500 text-blue-600 hover:bg-blue-50 normal-case"
+                startIcon={<UploadCloud size={18} />}
+                fullWidth={false}
+              >
+                Import Excel
+                <VisuallyHiddenInput
+                  type="file"
+                  accept=".csv, .xlsx, .xls"
+                  onChange={handleImportExcel}
+                />
+              </Button>
+            </div>
           </h2>
-          <div className="mb-6">
+
+          {/* List of Questions Added to Preview (Section Reading) */}
+          <div className="mb-4 flex flex-row justify-between items-center mt-10">
+            Section Reading - Danh sách câu hỏi đọc
             <Button
               component="label"
               variant="outlined"
-              className="h-10 border-green-500 text-green-600 hover:bg-green-50 normal-case"
-              startIcon={<UploadCloud size={18} />}
-              fullWidth
+              className="h-10 w-fit border-red-500 text-red-600 hover:bg-red-50 normal-case"
+              startIcon={<Plus size={18} />}
+              onClick={() => addReadingQuestion()}
             >
-              Nhập đề thi từ file
-              <VisuallyHiddenInput
-                type="file"
-                ref={refs.inputRefQuestion}
-                onChange={handleChangeUploadFileQuestions}
-              />
+              Thêm câu thủ công
             </Button>
           </div>
+          {questionsData.length === 0 &&
+          !questionsData.some((q) => q.section === "READING") ? (
+            <p className="text-gray-500 italic mb-5">
+              Chưa có câu hỏi nào được thêm.
+            </p>
+          ) : (
+            <div className="space-y-4 mb-5">
+              {questionsData
+                .filter((q) => q.section === "READING" || !q.section) // Fallback: show non-section questions in first block (Reading)
+                .map((questionItem, index) => (
+                  <QuestionPreviewItem
+                    key={index}
+                    questionItem={questionItem}
+                    index={index}
+                  />
+                ))}
+            </div>
+          )}
 
-          <TextField
-            label="Nội dung câu hỏi *"
-            multiline
-            minRows={8}
-            maxRows={12}
-            value={question?.contentQuestions}
-            name="contentQuestions"
-            onChange={handleChangeContentQuestions}
-            variant="outlined"
-            className="bg-white mb-6"
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-          />
-
-          <AnswerQuestion
-            question={question}
-            errors={errors}
-            handleChangeInputAnswer={handleChangeInputAnswer}
-          />
-
-          {/* Question Image Upload */}
-          <div className="mt-6 border border-gray-200 rounded-lg p-6 bg-gray-50 flex flex-col items-center">
-              <p className="text-sm text-gray-600 mb-3">
-                {question?.imageUrl
-                  ? `Đã có ảnh ${question?.question}`
-                  : `Tải ảnh ${question?.question} lên (nếu có)`}
-              </p>
-
+          {/* List of Questions Added to Preview (Section Listening) */}
+          <div className="mb-4 flex flex-row justify-between items-center">
+            Section Listening - Danh sách câu hỏi nghe
+            <div className="flex flex-row justify-between items-center gap-2">
               <Button
                 variant="outlined"
-                onClick={() => refs.imageRefQuestion.current?.click()}
-                startIcon={<ImageIcon size={18} />}
-                size="small"
-                className="border-gray-300 text-gray-600 hover:bg-gray-100 normal-case"
+                onClick={importAudio}
+                startIcon={<UploadCloud size={18} />}
+                className="h-10 normal-case border-blue-500 text-blue-600 hover:bg-blue-50"
               >
-                {question?.imageUrl ? "Thay đổi ảnh" : "Chọn ảnh"}
-              </Button>
-
-              <input
-                type="file"
-                accept="image/*"
-                ref={refs.imageRefQuestion}
-                onChange={upLoadImageQuestions}
-                className="hidden"
-              />
-
-            {question?.imageUrl && (
-              <div className="mt-4">
-                <img
-                  src={question.imageUrl}
-                  alt="Question preview"
-                  className="max-h-60 object-contain rounded-lg border border-gray-200 bg-white"
+                Upload Audio
+                <VisuallyHiddenInput
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleUploadAudio}
                 />
+              </Button>
+              <Button
+                component="label"
+                variant="outlined"
+                className="h-10 w-fit border-red-500 text-red-600 hover:bg-red-50 normal-case"
+                startIcon={<Plus size={18} />}
+                fullWidth={false}
+                onClick={() => addListeningQuestion()}
+              >
+                Thêm câu thủ công
+              </Button>
+            </div>
+          </div>
+
+          {formExamData.audioUrl && (
+            <div className="w-full bg-gray-50 p-3 rounded border border-gray-200">
+               <div className="flex justify-between items-center mb-2">
+                   <div className="text-sm font-medium text-gray-700">Audio File:</div>
+                   <Button 
+                     size="small" 
+                     color="error"
+                     startIcon={<Trash2 size={16} />}
+                     onClick={handleDeleteAudio}
+                     className="normal-case hover:bg-red-50"
+                   >
+                         Remove
+                   </Button>
+               </div>
+              <audio controls className="w-full" key={formExamData.audioUrl}>
+                <source src={formExamData.audioUrl} type="audio/mpeg" />
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+          )}
+          {questionsData.length === 0 &&
+          !questionsData.some((q) => q.section === "LISTENING") ? (
+            <p className="text-gray-500 italic mb-5">
+              Chưa có câu hỏi nào được thêm.
+            </p>
+          ) : (
+            <div className="space-y-4 mb-5">
+              {questionsData
+                .filter((q) => q.section === "LISTENING" || !q.section) // Fallback: show non-section questions in first block (Reading)
+                .map((questionItem, index) => (
+                  <QuestionPreviewItem
+                    key={index}
+                    questionItem={questionItem}
+                    index={index}
+                  />
+                ))}
+            </div>
+          )}
+
+          {/* List of Questions Added to Preview (Section Writing) */}
+          <div className="mb-4 flex flex-col gap-4">
+            <div className="flex flex-row justify-between items-center">
+              <span>Section Writing - Danh sách câu hỏi viết</span>
+              <div className="flex gap-2">
+                <Button
+                  component="label"
+                  variant="outlined"
+                  className="h-10 w-fit border-red-500 text-red-600 hover:bg-red-50 normal-case"
+                  startIcon={<Plus size={18} />}
+                  fullWidth={false}
+                  onClick={() => addWritingQuestion()}
+                >
+                  Thêm câu thủ công
+                </Button>
               </div>
-            )}
+            </div>
           </div>
-
-          {/* Action Buttons for Questions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <Button
-              variant="outlined"
-              onClick={() => setOpenDialogQuestion(true)}
-              startIcon={<Eye size={18} />}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 py-2 normal-case"
-              fullWidth
-            >
-              Xem câu hỏi
-            </Button>
-
-            <Button
-              variant="outlined"
-              onClick={() => setOpenDialogExam(true)}
-              startIcon={<Eye size={18} />}
-              className="border-purple-500 text-purple-600 hover:bg-purple-50 py-2 normal-case"
-              fullWidth
-            >
-              Xem toàn bộ đề
-            </Button>
-          </div>
+          {questionsData.length === 0 &&
+          !questionsData.some((q) => q.section === "WRITING") ? (
+            <p className="text-gray-500 italic mb-5">
+              Chưa có câu hỏi nào được thêm.
+            </p>
+          ) : (
+            <div className="space-y-4 mb-5">
+              {questionsData
+                .filter((q) => q.section === "WRITING" || !q.section)
+                .map((questionItem, index) => (
+                  <QuestionPreviewItem
+                    key={index}
+                    questionItem={questionItem}
+                    index={index}
+                  />
+                ))}
+            </div>
+          )}
         </div>
 
         <Divider className="my-2 border-gray-100" />
 
         {/* Final Actions */}
         <div className="flex gap-4 justify-end">
-          {isEditing ? (
             <Button
               variant="contained"
-              onClick={handleUpdateExam}
-              startIcon={<CheckCircle size={18} />}
-              className="bg-blue-600 hover:bg-blue-700 px-6 normal-case shadow-none"
-            >
-              Cập nhật
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              onClick={handleInsertExam}
+              onClick={handleUpsertExam}
               startIcon={<CheckCircle size={18} />}
               className="bg-green-600 hover:bg-green-700 px-6 normal-case shadow-none"
             >
-              Tạo đề thi
+              Save Exam
             </Button>
-          )}
         </div>
       </div>
-
-        {openDialogQuestion && (
-          <ViewQuestion
-            openDialog={openDialogQuestion}
-            setOpenDialog={setOpenDialogQuestion}
-            q={question}
-          />
-        )}
-
-        {openDialogExam && (
-          <ViewExam
-            openDialog={openDialogExam}
-            setOpenDialog={setOpenDialogExam}
-            questionsData={questionsData}
-          />
-        )}
     </div>
   );
 }

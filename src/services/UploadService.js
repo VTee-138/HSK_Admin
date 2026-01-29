@@ -25,6 +25,29 @@ export const UploadService = {
   },
 
   /**
+   * Upload một file audio lên server
+   * @param {File} audioFile - File audio cần upload
+   * @returns {Promise} - Promise chứa response từ server
+   */
+  uploadAudio: async (audioFile) => {
+    try {
+      const formData = new FormData();
+      formData.append("audio", audioFile);
+
+      const response = await post("/upload/audio", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      return response;
+    } catch (error) {
+      console.error("Upload audio error:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Xóa ảnh từ server
    * @param {string} filename - Tên file cần xóa
    * @returns {Promise} - Promise chứa response từ server
@@ -79,6 +102,33 @@ export const UploadService = {
       return {
         isValid: false,
         error: "File quá lớn. Kích thước tối đa là 5MB",
+      };
+    }
+
+    return { isValid: true, error: null };
+  },
+
+  /**
+   * Validate audio file trước khi upload
+   * @param {File} file - File cần validate
+   * @returns {Object} - Object chứa isValid và error message
+   */
+  validateAudioFile: (file) => {
+    if (!file) {
+      return { isValid: false, error: "Vui lòng chọn file" };
+    }
+
+    // Kiểm tra loại file
+    if (!file.type.startsWith("audio/")) {
+      return { isValid: false, error: "Chỉ cho phép upload file audio" };
+    }
+
+    // Kiểm tra kích thước file (20MB)
+    const maxSize = 20 * 1024 * 1024; // 20MB
+    if (file.size > maxSize) {
+      return {
+        isValid: false,
+        error: "File quá lớn. Kích thước tối đa là 20MB",
       };
     }
 
