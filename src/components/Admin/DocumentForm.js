@@ -274,7 +274,7 @@
 //                   variant="contained"
 //                   onClick={handleUpdateDocument}
 //                   startIcon={<CloudUploadIcon />}
-//                   className="bg-blue-600 hover:bg-blue-700 px-12 py-4 text-lg"
+//                   className="bg-red-600 hover:bg-red-700 px-12 py-4 text-lg"
 //                   size="large"
 //                 >
 //                   Cập nhật tài liệu

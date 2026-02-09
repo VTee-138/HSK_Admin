@@ -37,7 +37,7 @@ const QuestionPreviewItem = ({ questionItem, index }) => {
       <div className="flex gap-4">
         {/* Number in circle */}
         <div className="flex-shrink-0">
-          <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100">
+          <div className="w-9 h-9 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold text-sm border border-red-100">
             {displayNum}
           </div>
           {/* Type badge */}
@@ -80,8 +80,8 @@ const QuestionPreviewItem = ({ questionItem, index }) => {
                     key={opt}
                     className="flex items-start gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded"
                   >
-                    <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-blue-400">
-                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-red-400">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     </div>
                     <div className="flex gap-2">
                       <span className="font-bold text-gray-700 min-w-[1.5rem]">
@@ -103,8 +103,8 @@ const QuestionPreviewItem = ({ questionItem, index }) => {
                     key={char}
                     className="flex items-start gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded"
                   >
-                    <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-blue-400">
-                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-red-400">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     </div>
                     <div className="flex gap-2">
                       <span className="font-bold text-gray-700 min-w-[1.5rem]">
@@ -122,15 +122,15 @@ const QuestionPreviewItem = ({ questionItem, index }) => {
           {type === "DS" && (
             <div className="space-y-2">
               <div className="flex items-center gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded">
-                <div className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-blue-400">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-red-400">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <span className="font-bold text-gray-700">A.</span>
                 <span className="text-gray-600 font-medium">TRUE</span>
               </div>
               <div className="flex items-center gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded">
-                <div className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-blue-400">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-red-400">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <span className="font-bold text-gray-700">B.</span>
                 <span className="text-gray-600 font-medium">FALSE</span>
@@ -159,7 +159,7 @@ const QuestionPreviewItem = ({ questionItem, index }) => {
                     key={idx}
                     className="flex gap-2 text-sm items-center bg-white p-2 rounded border border-gray-200"
                   >
-                    <span className="font-bold text-blue-600 w-8 flex-shrink-0">
+                    <span className="font-bold text-red-600 w-8 flex-shrink-0">
                       {sq.question?.replace(/\D/g, "") ||
                         parseInt(displayNum) + idx}
                       .
@@ -274,7 +274,7 @@ export default function ExamForm({
               <Button
                 component="label"
                 variant="outlined"
-                className="h-10 w-fit border-blue-500 text-blue-600 hover:bg-blue-50 normal-case"
+                className="h-10 w-fit border-red-500 text-red-600 hover:bg-red-50 normal-case"
                 startIcon={<Download size={18} />}
                 fullWidth={false}
                 onClick={handleDownloadSample}
@@ -284,7 +284,7 @@ export default function ExamForm({
               <Button
                 component="label"
                 variant="outlined"
-                className="h-10 w-fit border-blue-500 text-blue-600 hover:bg-blue-50 normal-case"
+                className="h-10 w-fit border-red-500 text-red-600 hover:bg-red-50 normal-case"
                 startIcon={<UploadCloud size={18} />}
                 fullWidth={false}
               >
@@ -338,7 +338,7 @@ export default function ExamForm({
                 variant="outlined"
                 onClick={importAudio}
                 startIcon={<UploadCloud size={18} />}
-                className="h-10 normal-case border-blue-500 text-blue-600 hover:bg-blue-50"
+                className="h-10 normal-case border-red-500 text-red-600 hover:bg-red-50"
               >
                 Upload Audio
                 <VisuallyHiddenInput

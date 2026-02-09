@@ -33,15 +33,15 @@
 //   courseTypeOptions,
 // }) {
 //   return (
-//     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+//     <div className="min-h-screen bg-gradient-to-br from-red-50 to-indigo-100 py-8 px-4">
 //       <div className="max-w-6xl mx-auto">
 //         {/* Header Section */}
 //         <Card className="mb-8 shadow-lg border-0 bg-white/80 backdrop-blur">
 //           <CardContent className="text-center py-8">
 //             <div className="mb-4">
-//               <SchoolIcon className="text-6xl text-blue-500 mx-auto" />
+//               <SchoolIcon className="text-6xl text-red-500 mx-auto" />
 //             </div>
-//             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+//             <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-indigo-600 bg-clip-text text-transparent mb-2">
 //               {isEditing ? "Cập nhật khóa học" : "Tạo khóa học mới"}
 //             </h1>
 //             <p className="text-gray-600 text-lg">
@@ -58,7 +58,7 @@
 //             {/* Basic Information Section */}
 //             <div className="mb-8">
 //               <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-//                 <SchoolIcon className="mr-3 text-blue-500" />
+//                 <SchoolIcon className="mr-3 text-red-500" />
 //                 Thông tin cơ bản
 //               </h2>
 
@@ -77,7 +77,7 @@
 //                   InputProps={{
 //                     startAdornment: (
 //                       <InputAdornment position="start">
-//                         <SchoolIcon className="text-blue-500" />
+//                         <SchoolIcon className="text-red-500" />
 //                       </InputAdornment>
 //                     ),
 //                   }}
@@ -101,7 +101,7 @@
 //                 InputProps={{
 //                   startAdornment: (
 //                     <InputAdornment position="start">
-//                       <DescriptionIcon className="text-blue-500" />
+//                       <DescriptionIcon className="text-red-500" />
 //                     </InputAdornment>
 //                   ),
 //                 }}
@@ -118,7 +118,7 @@
 //             {/* Pricing Section */}
 //             <div className="mb-8">
 //               <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-//                 <MoneyIcon className="mr-3 text-blue-500" />
+//                 <MoneyIcon className="mr-3 text-red-500" />
 //                 Thông tin giá cả
 //               </h2>
 
@@ -138,7 +138,7 @@
 //                   InputProps={{
 //                     startAdornment: (
 //                       <InputAdornment position="start">
-//                         <MoneyIcon className="text-blue-500" />
+//                         <MoneyIcon className="text-red-500" />
 //                       </InputAdornment>
 //                     ),
 //                   }}
@@ -156,7 +156,7 @@
 //                   InputProps={{
 //                     startAdornment: (
 //                       <InputAdornment position="start">
-//                         <DiscountIcon className="text-blue-500" />
+//                         <DiscountIcon className="text-red-500" />
 //                       </InputAdornment>
 //                     ),
 //                   }}
@@ -175,7 +175,7 @@
 //                   InputProps={{
 //                     startAdornment: (
 //                       <InputAdornment position="start">
-//                         <DiscountIcon className="text-blue-500" />
+//                         <DiscountIcon className="text-red-500" />
 //                       </InputAdornment>
 //                     ),
 //                     endAdornment: (
@@ -196,7 +196,7 @@
 //             {/* Category and Image Section */}
 //             <div className="mb-8">
 //               <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-//                 <CategoryIcon className="mr-3 text-blue-500" />
+//                 <CategoryIcon className="mr-3 text-red-500" />
 //                 Phân loại và hình ảnh
 //               </h2>
 
@@ -243,7 +243,7 @@
 //                   <Button
 //                     variant="contained"
 //                     onClick={() => imageRefCourse.current?.click()}
-//                     className="bg-blue-500 hover:bg-blue-600"
+//                     className="bg-red-500 hover:bg-red-600"
 //                     startIcon={<CloudUploadIcon />}
 //                   >
 //                     {formData?.imgUrl ? "Thay đổi ảnh" : "Chọn ảnh"}
@@ -278,7 +278,7 @@
 //                   variant="contained"
 //                   onClick={handleUpdateCourse}
 //                   startIcon={<CloudUploadIcon />}
-//                   className="bg-blue-600 hover:bg-blue-700 py-4 px-8 text-lg"
+//                   className="bg-red-600 hover:bg-red-700 py-4 px-8 text-lg"
 //                   size="large"
 //                 >
 //                   Cập nhật khóa học

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useRef } from "react";
 import {
   Button,
@@ -29,11 +30,9 @@ import {
   publishBlog,
 } from "../../services/BlogService";
 import BlogForm from "./BlogForm";
-import { uploadImage } from "../../services/FileService";
 import UploadService from "../../services/UploadService";
 import { HOSTNAME } from "../../common/apiClient";
 import { toast } from "react-toastify";
-import { toLowerCaseNonAccentVietnamese } from "../../common/Utils";
 
 export default function Blogs() {
   const [blogs, setBlogs] = useState([]);
@@ -551,7 +550,7 @@ export default function Blogs() {
                       <div className="flex items-center justify-center space-x-2">
                         <button
                           onClick={() => handleOpenDialog(blog)}
-                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          className="text-gray-400 hover:text-red-600 transition-colors"
                           title="Chỉnh sửa"
                         >
                           <Edit2 className="w-4 h-4" />

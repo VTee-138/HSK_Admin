@@ -544,7 +544,7 @@ export default function Exams() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-100">
                         {exam?.type}
                       </span>
                     </td>
@@ -566,7 +566,7 @@ export default function Exams() {
                       <div className="flex items-center justify-center space-x-3">
                         <button
                           onClick={() => handleEditExam(exam)}
-                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          className="text-gray-400 hover:text-red-600 transition-colors"
                           title="Edit Exam"
                         >
                           <Edit2 className="w-4 h-4" />

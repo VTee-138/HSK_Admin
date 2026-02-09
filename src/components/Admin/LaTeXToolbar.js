@@ -1237,7 +1237,7 @@
 //   ];
 
 //   const categories = {
-//     basic: { name: "🔢 Cơ bản", color: "from-blue-500 to-blue-600" },
+//     basic: { name: "🔢 Cơ bản", color: "from-red-500 to-red-600" },
 //     greek: { name: "🇬🇷 Hy Lạp", color: "from-green-500 to-green-600" },
 //     greek_upper: {
 //       name: "🇬🇷 Hy Lạp Hoa",

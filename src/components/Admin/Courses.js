@@ -365,7 +365,7 @@
 //           <CardContent>
 //             <div className="flex justify-between items-center">
 //               <div className="flex items-center">
-//                 <SchoolIcon className="text-3xl text-blue-500 mr-3" />
+//                 <SchoolIcon className="text-3xl text-red-500 mr-3" />
 //                 <div>
 //                   <h1 className="text-2xl font-bold text-gray-800">
 //                     Quản lý Khóa học
@@ -379,7 +379,7 @@
 //                 variant="contained"
 //                 startIcon={<AddIcon />}
 //                 onClick={() => handleOpenDialog()}
-//                 className="bg-blue-500 hover:bg-blue-600"
+//                 className="bg-red-500 hover:bg-red-600"
 //                 size="large"
 //               >
 //                 Thêm khóa học

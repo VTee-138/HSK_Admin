@@ -53,8 +53,8 @@ export default function Dashboard() {
           icon={Users}
           title="Người dùng"
           value={totalData?.totalUsers}
-          colorClass="text-blue-600"
-          bgClass="bg-blue-50"
+          colorClass="text-red-600"
+          bgClass="bg-red-50"
         />
         <StatCard
           icon={FileText}
