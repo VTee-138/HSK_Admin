@@ -31,7 +31,8 @@
     "tailwind-merge": "^2.6.0",
     "tinymce": "^7.9.1",
     "uuid": "^11.0.5",
-    "web-vitals": "^4.2.4"
+    "web-vitals": "^4.2.4",
+    "xlsx": "^0.18.5"
   },
   "scripts": {
     "start": "react-scripts start",

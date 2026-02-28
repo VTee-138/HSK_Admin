@@ -46,6 +46,12 @@ export default function Exams() {
   const limit = 6;
 
   const [openDialogQuestion, setOpenDialogQuestion] = useState(false);
+  const [dialogState, setDialogState] = useState({
+    section: "READING",
+    nextNumber: 1,
+    editQuestion: null,
+    editIndex: null,
+  });
   const [listExams, setListExams] = useState([]);
   const [question, setQuestion] = useState({
     question: "Câu 1",
@@ -76,14 +82,14 @@ export default function Exams() {
 
   // Save to local storage whenever critical state changes
   useEffect(() => {
-      // Only save if there is some data to save
-      if (formExamData.title || (questionsData && questionsData.length > 0)) {
-          const draft = {
-              formExamData,
-              questionsData,
-          };
-          localStorage.setItem("examDraft", JSON.stringify(draft));
-      }
+    // Only save if there is some data to save
+    if (formExamData.title || (questionsData && questionsData.length > 0)) {
+      const draft = {
+        formExamData,
+        questionsData,
+      };
+      localStorage.setItem("examDraft", JSON.stringify(draft));
+    }
   }, [formExamData, questionsData]);
 
   const handleUploadAudio = async (event) => {
@@ -107,8 +113,8 @@ export default function Exams() {
         toast.success("Upload audio thành công");
       }
     } catch (error) {
-       console.error("Upload audio error:", error);
-       toast.error("Upload audio thất bại");
+      console.error("Upload audio error:", error);
+      toast.error("Upload audio thất bại");
     }
   };
 
@@ -118,60 +124,110 @@ export default function Exams() {
       audioUrl: "",
     });
     if (useRef.current) {
-        useRef.current.value = null;
+      useRef.current.value = null;
     }
   };
 
 
-  // Click and open dialog to add question
-  const addReadingQuestion = () => {
-    setQuestion({
-      question: `Câu ${questionsData.length + 1}`,
-      contentQuestions: "",
-      imageUrl: "",
-      type: "",
-      section: "READING",
-      answers: "",
+  // Open dialog to add questions for a section
+  const openAddDialog = (section) => {
+    const nextNum = (questionsData?.length || 0) + 1;
+    setDialogState({ section, nextNumber: nextNum, editQuestion: null, editIndex: null });
+    setOpenDialogQuestion(true);
+  };
+
+  const addReadingQuestion = () => openAddDialog("READING");
+  const addListeningQuestion = () => openAddDialog("LISTENING");
+  const addWritingQuestion = () => openAddDialog("WRITING");
+
+  // Open dialog in edit mode
+  const openEditDialog = (index) => {
+    const orig = questionsData[index];
+    let payload = orig;
+    if (orig?.matchGroup) {
+      const groupQs = questionsData
+        .filter((q) => q.matchGroup === orig.matchGroup)
+        .sort((a, b) => a.matchIndex - b.matchIndex);
+      payload = { ...orig, mtAnswers: groupQs.map((g) => g.correctAnswer) };
+    }
+    setDialogState({
+      section: orig?.section || "READING",
+      nextNumber: index + 1,
+      editQuestion: payload,
+      editIndex: index,
     });
     setOpenDialogQuestion(true);
   };
 
-  const addListeningQuestion = () => {
-    setQuestion({
-      question: `Câu ${questionsData.length + 1}`,
-      contentQuestions: "",
-      imageUrl: "",
-      type: "",
-      section: "LISTENING",
-      answers: "",
-    });
-    setOpenDialogQuestion(true);
+  // Batch save from dialog
+  const handleAddQuestionSubmit = (newQuestions) => {
+    const withSection = newQuestions.map((q) => ({ ...q, section: dialogState.section }));
+    setQuestionsData((prev) => renumber(prev ? [...prev, ...withSection] : [...withSection]));
+    toast.success(`Đã thêm ${withSection.length} câu hỏi vào ${dialogState.section}`);
   };
 
-  const addWritingQuestion = () => {
-    setQuestion({
-      question: `Câu ${questionsData.length + 1}`,
-      contentQuestions: "",
-      imageUrl: "",
-      type: "",
-      section: "WRITING",
-      answers: "",
+  // Edit a question in place (supports MT groups)
+  const handleEditQuestion = (index, updatedQ) => {
+    setQuestionsData((prev) => {
+      let copy = [...prev];
+      if (Array.isArray(updatedQ)) {
+        // When editing a matching group we may change the number of sub-questions.
+        const groupId = updatedQ[0]?.matchGroup;
+        if (groupId) {
+          // find range of existing questions with that group
+          const idxs = copy
+            .map((q, i) => (q.matchGroup === groupId ? i : -1))
+            .filter((i) => i !== -1);
+          if (idxs.length) {
+            const start = idxs[0];
+            const before = copy.slice(0, start);
+            const after = copy.slice(idxs[idxs.length - 1] + 1);
+            const newGroup = updatedQ.map((u) => ({ ...u, section: prev[start]?.section || dialogState.section }));
+            copy = [...before, ...newGroup, ...after];
+          }
+        }
+      } else {
+        copy[index] = { ...updatedQ, section: prev[index]?.section || dialogState.section };
+      }
+      return renumber(copy);
     });
-    setOpenDialogQuestion(true);
+    toast.success("Cập nhật câu hỏi thành công");
   };
 
-  const handleAddQuestionSubmit = (newQuestion, newAnswers) => {
-    // Merge section from active question state
-    const questionWithSection = {
-        ...newQuestion,
-        section: question.section
-    };
+  // utility that ensures the question text is sequential after list changes
+  const renumber = (list) => {
+    return list.map((q, i) => ({ ...q, question: `Câu ${i + 1}` }));
+  };
 
-    const updatedQuestions = questionsData
-      ? [...questionsData, questionWithSection]
-      : [questionWithSection];
-    setQuestionsData(updatedQuestions);
-    toast.success("Question added successfully");
+  // Move a question up or down and reassign numbers
+  const handleReorderQuestion = (fromIdx, toIdx) => {
+    if (toIdx < 0 || toIdx >= questionsData.length) return;
+    setQuestionsData((prev) => {
+      const copy = [...prev];
+      const [moved] = copy.splice(fromIdx, 1);
+      copy.splice(toIdx, 0, moved);
+      return renumber(copy);
+    });
+  };
+
+  // Move a block of questions (matching group) by direction (-1 up, +1 down)
+  const handleMoveGroup = (startIdx, length, direction) => {
+    setQuestionsData((prev) => {
+      const copy = [...prev];
+      const block = copy.splice(startIdx, length);
+      const toIdx = startIdx + direction;
+      if (toIdx < 0 || toIdx > copy.length) return prev;
+      copy.splice(toIdx, 0, ...block);
+      return renumber(copy);
+    });
+  };
+
+  // Delete a question
+  const handleDeleteQuestion = (index, count = 1) => {
+    setQuestionsData((prev) => {
+      const filtered = prev.filter((_, i) => i < index || i >= index + count);
+      return renumber(filtered);
+    });
   };
 
   const handleDeleteExam = async (id) => {
@@ -231,9 +287,9 @@ export default function Exams() {
   const handleChangeInputQuestion = (event) => {
     let { name, value } = event.target;
     setFormExamData((prevFormData) => ({
-        ...prevFormData,
-        [name]: value,
-      }));
+      ...prevFormData,
+      [name]: value,
+    }));
   };
 
   const handleUpsertExam = async () => {
@@ -296,6 +352,13 @@ export default function Exams() {
       return false;
     }
 
+    // if listening section present we require an audio file
+    const hasListening = questionsData?.some((q) => q.section === "LISTENING");
+    if (hasListening && !formExamData.audioUrl) {
+      toast.error("Bài nghe yêu cầu phải có file audio (import từ Admin)");
+      return false;
+    }
+
     return true;
   };
 
@@ -328,136 +391,158 @@ export default function Exams() {
     }
   };
 
-  const handleDownloadSample = () => {
-    // Define headers
-    const headers = [
-      "Section (READING/LISTENING/WRITING)",
-      "Type (TN/DS/MT)",
-      "Question Content",
-      "Option A",
-      "Option B",
-      "Option C",
-      "Option D",
-      "Correct Answer (A/B/C/D...)",
-      "Explanation"
-    ];
+  // ─── Template / Download / Import System ────────────────────────────
+  // Listening types:
+  //   DS  → True/False
+  //   TN  → Single Choice (Question Content can be empty)
+  //   MT  → Matching (options A-E or A-F, each sub-question matches to one option)
+  // note: audio file is mandatory when any listening questions exist (import via Upload Audio above)
+  const HEADERS = [
+    "Type (TN/DS/MT)",
+    "Question Content",
+    "Option A",
+    "Option B",
+    "Option C",
+    "Option D",
+    "Option E",
+    "Option F",
+    "Correct Answer",
+    "Explanation",
+    // for reading MT: additional proposition texts (lines to show for matching)
+    "Proposition A",
+    "Proposition B",
+    "Proposition C",
+    "Proposition D",
+    "Proposition E",
+    "Proposition F",
+  ];
 
-    // Define sample rows
-    const rows = [
-      [
-        "READING",
-        "TN",
-        "Thủ đô của Việt Nam là gì?",
-        "Hồ Chí Minh",
-        "Hà Nội",
-        "Đà Nẵng",
-        "Cần Thơ",
-        "B",
-        "Hà Nội là thủ đô của Việt Nam"
-      ],
-      [
-        "LISTENING",
-        "DS",
-        "1 + 1 = 3 (True/False)?",
-        "True",
-        "False",
-        "",
-        "",
-        "B",
-        "1 + 1 = 2"
-      ],
-      [
-        "WRITING",
-        "TN",
-        "Chọn từ đúng điền vào chỗ trống: I ___ a student.",
-        "is",
-        "are",
-        "am",
-        "be",
-        "C",
-        ""
-      ]
-    ];
-
-    // Convert to CSV format with BOM for UTF-8 support in Excel
-    const csvContent = "\uFEFF" + 
-      [
-        headers.join(","),
-        ...rows.map(row => row.map(cell => `"${(cell || "").toString().replace(/"/g, '""')}"`).join(","))
-      ].join("\n");
-
-    // Create download link
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "question_import_sample.csv");
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  
+  const SAMPLE_ROWS_BY_SECTION = {
+    READING: [
+      ["[VÍ DỤ] MT", "Tỉnh nào sau đây", "Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "", "", "B", "Hà Nội là thủ đô của Việt Nam"],
+    ],
+    LISTENING: [
+      // True/False
+      ["[VÍ DỤ] DS", "Nghe và xác định: Người đó đang ăn sáng.", "True", "False", "", "", "", "", "A", ""],
+      // Single Choice
+      ["[VÍ DỤ] TN", "Người phụ nữ muốn làm gì vào cuối tuần?", "Đi mua sắm", "Xem phim", "Đi dã ngoại", "", "", "", "B", ""],
+      // Matching – Option A-F = đáp án cho sub-question 1-6 (ảnh A-F upload riêng)
+      ["[VÍ DỤ] MT", "Nghe hội thoại và nối câu hỏi với hình ảnh (A-F)", "B", "A", "D", "F", "C", "E", "", ""],
+    ],
+    WRITING: [
+      ["[VÍ DỤ] WT", "Viết một đoạn văn ngắn về chủ đề gia đình.", "Your answer here", "Khuyến khích dùng từ vựng đã học"]
+    ],
   };
 
-  const parseCSVLine = (text) => {
-    const result = [];
-    let cell = "";
-    let inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      if (char === '"') {
-        if (inQuotes && text[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === "," && !inQuotes) {
-        result.push(cell);
-        cell = "";
-      } else {
-        cell += char;
-      }
+  const buildAndDownloadXLSX = (rows, filename, headers = HEADERS) => {
+    const XLSX = require("xlsx");
+    const wsData = [headers, ...rows];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Column widths
+    ws["!cols"] = [
+      { wch: 18 }, { wch: 50 }, { wch: 16 }, { wch: 16 },
+      { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
+      { wch: 14 }, { wch: 25 },
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, "Questions");
+    XLSX.writeFile(wb, filename);
+  };
+
+  const handleDownloadSampleForSection = (section) => {
+    const rows = SAMPLE_ROWS_BY_SECTION[section];
+    if (rows && rows.length > 0) {
+      const headersFor = section === "WRITING"
+        ? ["Type (WT)", "Question Content", "Correct Answer", "Explanation"]
+        : HEADERS;
+      buildAndDownloadXLSX(rows, `question_sample_${section.toLowerCase()}.xlsx`, headersFor);
     }
-    result.push(cell);
-    return result;
   };
 
-  const processCSVData = (csvText) => {
-    const cleanText = csvText.replace(/^\uFEFF/, "");
-    const lines = cleanText.split(/\r\n|\n/);
+  // ─── Shared import parsing ────────────────────────────────────────
+  const parseRowsToQuestions = (rows) => {
+    // rows = array of arrays, first row is header (skipped)
     const questions = [];
+    for (let i = 1; i < rows.length; i++) {
+      const parts = rows[i];
+      if (!parts || parts.length < 2) continue;
 
-    // Skip header (i=1)
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      const parts = parseCSVLine(line);
-      // Ensure we have at least Section, Type, Content
-      if (parts.length < 3) continue;
+      let rawType = String(parts[0] || "").trim();
+      // Skip example rows marked with [VÍ DỤ]
+      if (rawType.startsWith("[VÍ DỤ]")) continue;
 
-      const section = parts[0]?.trim() || "READING";
-      const type = parts[1]?.trim() || "TN";
-      const content = parts[2]?.trim();
+      const type = rawType;
+      if (!type) continue;
 
+      const content = String(parts[1] || "").trim();
+      // prepare base object
       let newQ = {
-        id: new Date().getTime() + i, // Temp ID
-        section,
+        id: new Date().getTime() + i,
         type,
         question: `Câu ${questionsData.length + questions.length + 1}`,
         contentQuestions: content,
         imageUrl: "",
-        correctAnswer: parts[7]?.trim(),
-        explain: parts[8]?.trim(),
+        correctAnswer: "",
+        explain: "",
       };
+      // writing type uses columns 2 and 3 only
+      if (type === "WT") {
+        newQ.correctAnswer = String(parts[2] || "").trim();
+        newQ.explain = String(parts[3] || "").trim();
+        questions.push(newQ);
+        continue;
+      }
+      // otherwise behave as before
+      newQ.correctAnswer = String(parts[8] || "").trim();
+      newQ.explain = String(parts[9] || "").trim();
 
       if (type === "TN") {
-        newQ.contentAnswerA = parts[3]?.trim();
-        newQ.contentAnswerB = parts[4]?.trim();
-        newQ.contentAnswerC = parts[5]?.trim();
-        newQ.contentAnswerD = parts[6]?.trim();
+        newQ.contentAnswerA = String(parts[2] || "").trim();
+        newQ.contentAnswerB = String(parts[3] || "").trim();
+        newQ.contentAnswerC = String(parts[4] || "").trim();
+        newQ.contentAnswerD = String(parts[5] || "").trim();
+        if (String(parts[6] || "").trim()) newQ.contentAnswerE = String(parts[6]).trim();
+        if (String(parts[7] || "").trim()) newQ.contentAnswerF = String(parts[7]).trim();
       } else if (type === "DS") {
-        newQ.contentYA = parts[3]?.trim();
-        newQ.contentYB = parts[4]?.trim();
+        newQ.contentAnswerA = String(parts[2] || "True").trim();
+        newQ.contentAnswerB = String(parts[3] || "False").trim();
+      } else if (type === "MT") {
+        // For MT: Option A-F columns = answers for sub-questions 1-6
+        // Additional proposition texts may follow later (columns 10-15)
+        // Expand into N individual questions (one per answer)
+        const matchAnswers = [];
+        for (let c = 2; c <= 7; c++) {
+          const ans = String(parts[c] || "").trim();
+          if (ans) matchAnswers.push(ans);
+        }
+        // collect propositions if available
+        const mtOptions = [];
+        for (let c = 10; c <= 15; c++) {
+          const opt = String(parts[c] || "").trim();
+          if (opt) mtOptions.push(opt);
+        }
+        // The first sub-question carries the content/image context
+        // All sub-questions are type MT with correctAnswer set
+        for (let m = 0; m < matchAnswers.length; m++) {
+          const subQ = {
+            id: new Date().getTime() + i * 100 + m,
+            type: "MT",
+            question: `Câu ${questionsData.length + questions.length + 1}`,
+            contentQuestions: m === 0 ? content : "", // only first gets the description
+            imageUrl: "",
+            correctAnswer: matchAnswers[m],
+            explain: "",
+            matchGroup: `mt_${i}`, // links sub-questions together
+            matchIndex: m, // position within the group
+            matchTotal: matchAnswers.length, // total in the group
+            mtOptions, // may be empty array
+          };
+          questions.push(subQ);
+        }
+        continue; // skip the normal push below
       }
 
       questions.push(newQ);
@@ -465,29 +550,82 @@ export default function Exams() {
     return questions;
   };
 
-  const handleImportExcel = (event) => {
+  const handleImportExcelForSection = (section, event) => {
     const file = event.target.files[0];
     if (!file) return;
+    const isExcel = file.name.match(/\.(xlsx|xls)$/i);
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target.result;
-        const newQuestions = processCSVData(content);
-        if (newQuestions.length > 0) {
-          setQuestionsData((prev) => (prev ? [...prev, ...newQuestions] : [...newQuestions]));
-          toast.success(`Đã thêm ${newQuestions.length} câu hỏi từ file!`);
-        } else {
-          toast.warn("Không tìm thấy dữ liệu hợp lệ trong file.");
+    if (isExcel) {
+      // Read as XLSX
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const XLSX = require("xlsx");
+          const wb = XLSX.read(e.target.result, { type: "array" });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+          const newQuestions = parseRowsToQuestions(rows).map((q) => ({
+            ...q,
+            section,
+          }));
+          if (newQuestions.length > 0) {
+            setQuestionsData((prev) => (prev ? [...prev, ...newQuestions] : [...newQuestions]));
+            toast.success(`Đã thêm ${newQuestions.length} câu hỏi vào ${section}!`);
+          } else {
+            toast.warn("Không tìm thấy dữ liệu hợp lệ trong file (các dòng [VÍ DỤ] sẽ bị bỏ qua).");
+          }
+        } catch (err) {
+          console.error("XLSX Parse Error:", err);
+          toast.error("Lỗi đọc file Excel.");
         }
-      } catch (err) {
-        console.error("CSV Parse Error:", err);
-        toast.error("Lỗi format file CSV.");
-      }
-    };
-    reader.readAsText(file);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      // Read as CSV fallback
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target.result;
+          const cleanText = text.replace(/^\uFEFF/, "");
+          const lines = cleanText.split(/\r\n|\n/).filter((l) => l.trim());
+          // Convert CSV lines to array-of-arrays
+          const rows = lines.map((line) => {
+            const result = [];
+            let cell = "";
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+              const ch = line[i];
+              if (ch === '"') {
+                if (inQuotes && line[i + 1] === '"') { cell += '"'; i++; }
+                else { inQuotes = !inQuotes; }
+              } else if (ch === "," && !inQuotes) { result.push(cell); cell = ""; }
+              else { cell += ch; }
+            }
+            result.push(cell);
+            return result;
+          });
+          const newQuestions = parseRowsToQuestions(rows).map((q) => ({
+            ...q,
+            section,
+          }));
+          if (newQuestions.length > 0) {
+            setQuestionsData((prev) => (prev ? [...prev, ...newQuestions] : [...newQuestions]));
+            toast.success(`Đã thêm ${newQuestions.length} câu hỏi vào ${section}!`);
+          } else {
+            toast.warn("Không tìm thấy dữ liệu hợp lệ trong file.");
+          }
+        } catch (err) {
+          console.error("CSV Parse Error:", err);
+          toast.error("Lỗi format file CSV.");
+        }
+      };
+      reader.readAsText(file);
+    }
     event.target.value = null;
   };
+
+
+
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -553,11 +691,10 @@ export default function Exams() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                          exam.access === "PUBLIC"
-                            ? "bg-green-50 text-green-700 border-green-100"
-                            : "bg-red-50 text-red-700 border-red-100"
-                        }`}
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${exam.access === "PUBLIC"
+                          ? "bg-green-50 text-green-700 border-green-100"
+                          : "bg-red-50 text-red-700 border-red-100"
+                          }`}
                       >
                         {exam.access === "PUBLIC" ? "Active" : "Inactive"}
                       </span>
@@ -617,40 +754,32 @@ export default function Exams() {
         questionsData={questionsData}
 
         handleChangeInputQuestion={handleChangeInputQuestion}
-        question={question}
-        handleChangeSelectQuestions={handleChangeSelectQuestions}
 
         addReadingQuestion={addReadingQuestion}
         addListeningQuestion={addListeningQuestion}
         addWritingQuestion={addWritingQuestion}
 
-        handleChangeInputAnswer={handleChangeInputAnswer}
-        setOpenDialogQuestion={setOpenDialogQuestion}
-        openDialogQuestion={openDialogQuestion}
         handleUpsertExam={handleUpsertExam}
 
         handleUploadAudio={handleUploadAudio}
         handleDeleteAudio={handleDeleteAudio}
-        handleDownloadSample={handleDownloadSample}
-        handleImportExcel={handleImportExcel}
+        handleDownloadSampleForSection={handleDownloadSampleForSection}
+        handleImportExcelForSection={handleImportExcelForSection}
+        handleDeleteQuestion={handleDeleteQuestion}
+        handleEditQuestion={openEditDialog}
+        handleReorderQuestion={handleReorderQuestion}
+        handleMoveGroup={handleMoveGroup}
       />
 
       <QuestionDialog
         open={openDialogQuestion}
         onClose={() => setOpenDialogQuestion(false)}
-        onSave={handleAddQuestionSubmit}
-        questionNumberStart={(function () {
-          if (!questionsData || questionsData.length === 0) return 1;
-          let count = 0;
-          questionsData.forEach((q) => {
-            if (q.subQuestions && Array.isArray(q.subQuestions)) {
-              count += q.subQuestions.length;
-            } else {
-              count += 1;
-            }
-          });
-          return count + 1;
-        })()}
+        section={dialogState.section}
+        nextNumber={dialogState.nextNumber}
+        onSaveMany={handleAddQuestionSubmit}
+        editQuestion={dialogState.editQuestion}
+        editIndex={dialogState.editIndex}
+        onSaveEdit={handleEditQuestion}
       />
     </div>
   );
