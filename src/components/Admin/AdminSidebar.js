@@ -8,6 +8,7 @@ import {
   MoreVertical,
   LogOut,
 } from 'lucide-react';
+import logo from '../../images/logo.png';
 
 export default function AdminSidebar({ 
   isSidebarOpen, 
@@ -57,14 +58,29 @@ export default function AdminSidebar({
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Logo Section */}
-        <div className="p-6">
-          <Link to="/" className="flex items-center gap-3 text-red-600 hover:opacity-80 transition-opacity">
-            <div className="bg-red-50 p-2 rounded-xl">
-              <GraduationCap size={28} />
-            </div>
-            <span className="text-xl font-bold tracking-tight">86HSK ADMIN</span>
-          </Link>
-        </div>
+       <div className="p-4">
+  <Link
+    to="/"
+    className="group flex items-center gap-3 px-3 py-2 rounded-2xl transition-all hover:bg-gray-100"
+  >
+    <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-red-700 shadow-md group-hover:shadow-lg transition-all">
+      <img
+        src="/logo.png"
+        alt="86HSK"
+        className="w-14 h-14 object-contain"
+      />
+    </div>
+
+    <div className="leading-tight">
+      <div className="text-lg font-bold text-red-600 tracking-wide">
+        86HSK
+      </div>
+      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+        Admin
+      </div>
+    </div>
+  </Link>
+</div>
 
         {/* Navigation Section */}
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
