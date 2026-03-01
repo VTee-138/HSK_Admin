@@ -3,6 +3,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   Button,
   TextField,
@@ -35,6 +36,39 @@ const TYPES_BY_SECTION = {
 function buildDefaultType(section) {
   const types = TYPES_BY_SECTION[section] || TYPES_BY_SECTION.READING;
   return types[0].value;
+}
+
+// reuse the same confirmation dialog widget used elsewhere
+function ConfirmDialog({
+  open,
+  title = "Xác nhận",
+  message = "Bạn có chắc chắn?",
+  cancelText,
+  confirmText,
+  onCancel,
+  onConfirm,
+}) {
+  return (
+    <Dialog open={open} onClose={onCancel}>
+      <DialogTitle className="text-red-600 font-bold">{title}</DialogTitle>
+      <DialogContent>
+        <DialogContentText>{message}</DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel} className="normal-case text-gray-600">
+          {cancelText || "Hủy"}
+        </Button>
+        <Button
+          onClick={onConfirm}
+          color="error"
+          variant="contained"
+          className="normal-case"
+        >
+          {confirmText || "Xác nhận"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 
 /**
@@ -97,8 +131,21 @@ export default function QuestionDialog({
 
   // Accumulated questions in this session (batch mode)
   const [sessionQuestions, setSessionQuestions] = useState([]);
+  const [isDirty, setIsDirty] = useState(false);
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = useState(false);
 
   const fileInputRef = useRef(null);
+
+  // any change in the form makes it dirty
+  useEffect(() => {
+    if (!open) return;
+    setIsDirty(false);
+  }, [open]);
+
+  useEffect(() => {
+    // mark dirty on any field or session modification
+    if (open) setIsDirty(true);
+  }, [type, sttOverride, content, imageUrl, correctAnswer, tnOptions, mtAnswers, mtOptions, explain, sessionQuestions]);
 
   // ── seed form when edit mode or when dialog opens ──────────────────
   useEffect(() => {
@@ -218,6 +265,16 @@ export default function QuestionDialog({
     return null;
   };
 
+  // handle dialog close with unsaved-warning
+  const handleCloseInternal = () => {
+    if (isDirty) {
+      // show styled confirmation instead of native prompt
+      setConfirmLeaveOpen(true);
+    } else {
+      onClose();
+    }
+  };
+
   // ── save (edit mode) ────────────────────────────────────────────────
   const handleSaveEdit = () => {
     const sttNum = parseInt(sttOverride) || nextNumber;
@@ -271,6 +328,7 @@ export default function QuestionDialog({
     }
     onSaveMany(all);
     toast.success(`Đã lưu ${all.length} câu hỏi`);
+    setIsDirty(false);
     onClose();
   };
 
@@ -305,7 +363,7 @@ export default function QuestionDialog({
             {section}
           </span>
         </div>
-        <IconButton onClick={onClose} size="small"><X size={18} /></IconButton>
+        <IconButton onClick={handleCloseInternal} size="small"><X size={18} /></IconButton>
       </DialogTitle>
 
       <DialogContent dividers className="space-y-5 pt-5">
@@ -612,9 +670,20 @@ export default function QuestionDialog({
       </DialogContent>
 
       <DialogActions className="gap-2 p-4 border-t">
-        <Button onClick={onClose} className="normal-case text-gray-500" size="small">
+        <Button onClick={handleCloseInternal} className="normal-case text-gray-500" size="small">
           Hủy
         </Button>
+        <ConfirmDialog
+          open={confirmLeaveOpen}
+          title="Xác nhận"
+          message="Bạn có chắc muốn thoát? Mọi thay đổi sẽ bị bỏ."
+          onCancel={() => setConfirmLeaveOpen(false)}
+          onConfirm={() => {
+            setConfirmLeaveOpen(false);
+            onClose();
+          }}
+          confirmText="Thoát"
+        />
         {isEditMode ? (
           <Button onClick={handleSaveEdit} variant="contained" className="bg-red-600 hover:bg-red-700 normal-case shadow-none">
             Lưu thay đổi

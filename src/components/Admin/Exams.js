@@ -19,7 +19,7 @@ import {
 import UploadService from "../../services/UploadService";
 import ExamForm from "./ExamForm";
 import QuestionDialog from "./QuestionDialog";
-import { Tooltip } from "@mui/material";
+import { Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from "@mui/material";
 import { HOSTNAME } from "../../common/apiClient";
 
 const configDate = {
@@ -33,13 +33,50 @@ const configDate = {
   timeZone: "Asia/Ho_Chi_Minh",
 };
 
+// simple reusable confirmation dialog (same as ExamForm)
+function ConfirmDialog({
+  open,
+  title = "Xác nhận",
+  message = "Bạn có chắc chắn?",
+  cancelText,
+  confirmText,
+  onCancel,
+  onConfirm,
+}) {
+  return (
+    <Dialog open={open} onClose={onCancel}>
+      <DialogTitle className="text-red-600 font-bold">{title}</DialogTitle>
+      <DialogContent>
+        <DialogContentText>{message}</DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onCancel} className="normal-case text-gray-600">
+          {cancelText || "Hủy"}
+        </Button>
+        <Button
+          onClick={onConfirm}
+          color="error"
+          variant="contained"
+          className="normal-case"
+        >
+          {confirmText || "Xác nhận"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export default function Exams() {
   const [formExamData, setFormExamData] = useState({
     title: "Untitled Exam",
     time: 60,
     type: "HSK1",
     access: "PUBLIC",
+    audioUrl: "",
   });
+
+  // ref to the hidden audio file input so we can clear its value when needed
+  const audioInputRef = useRef(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -61,6 +98,9 @@ export default function Exams() {
     answers: "",
   });
   const [questionsData, setQuestionsData] = useState([]);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteExamId, setDeleteExamId] = useState(null);
 
   useEffect(() => {
     const savedDraft = localStorage.getItem("examDraft");
@@ -92,6 +132,55 @@ export default function Exams() {
     }
   }, [formExamData, questionsData]);
 
+
+  const handleDeleteAudio = () => {
+    setFormExamData({
+      ...formExamData,
+      audioUrl: "",
+    });
+    // clear file input so the same file can be re‑selected later
+    if (audioInputRef.current) {
+      audioInputRef.current.value = null;
+    }
+  };
+
+  const handleCancel = () => {
+    // open styled confirmation instead of native prompt
+    setCancelConfirmOpen(true);
+  };
+
+  // actually perform cancellation after user confirms
+  const performCancel = () => {
+    setCancelConfirmOpen(false);
+    setFormExamData({
+      title: "Untitled Exam",
+      time: 60,
+      type: "HSK1",
+      access: "PUBLIC",
+      audioUrl: "",
+    });
+    setQuestionsData([]);
+    if (audioInputRef.current) {
+      audioInputRef.current.value = null;
+    }
+    localStorage.removeItem("examDraft");
+    toast.info("Đã hủy và xóa bản nháp.");
+  };
+
+  // open confirmation dialog for deleting a specific exam
+  const handleDeleteExamConfirm = (id) => {
+    setDeleteExamId(id);
+    setDeleteConfirmOpen(true);
+  };
+
+  const performDeleteExam = async () => {
+    setDeleteConfirmOpen(false);
+    if (deleteExamId) {
+      await handleDeleteExam(deleteExamId);
+      setDeleteExamId(null);
+    }
+  };
+
   const handleUploadAudio = async (event) => {
     try {
       const file = event.target?.files[0];
@@ -111,20 +200,14 @@ export default function Exams() {
           audioUrl: audioUrl,
         });
         toast.success("Upload audio thành công");
+        // clear the input so user can pick the same file again if desired
+        if (audioInputRef.current) {
+          audioInputRef.current.value = null;
+        }
       }
     } catch (error) {
       console.error("Upload audio error:", error);
       toast.error("Upload audio thất bại");
-    }
-  };
-
-  const handleDeleteAudio = () => {
-    setFormExamData({
-      ...formExamData,
-      audioUrl: "",
-    });
-    if (useRef.current) {
-      useRef.current.value = null;
     }
   };
 
@@ -159,10 +242,27 @@ export default function Exams() {
     setOpenDialogQuestion(true);
   };
 
-  // Batch save from dialog
+  // helper to pull the numeric index from a question object
+  const getQuestionNumber = (q) => {
+    if (!q || !q.question) return 0;
+    const m = String(q.question).match(/(\d+)/);
+    return m ? parseInt(m[1], 10) : 0;
+  };
+
+  // Batch save from dialog; insert at the desired positions, shifting later questions
   const handleAddQuestionSubmit = (newQuestions) => {
     const withSection = newQuestions.map((q) => ({ ...q, section: dialogState.section }));
-    setQuestionsData((prev) => renumber(prev ? [...prev, ...withSection] : [...withSection]));
+    setQuestionsData((prev) => {
+      let copy = prev ? [...prev] : [];
+      // sort by target position so we insert in order
+      withSection.sort((a, b) => getQuestionNumber(a) - getQuestionNumber(b));
+      withSection.forEach((q) => {
+        const num = getQuestionNumber(q) || (copy.length + 1);
+        const idx = Math.max(0, Math.min(copy.length, num - 1));
+        copy.splice(idx, 0, q);
+      });
+      return renumber(copy);
+    });
     toast.success(`Đã thêm ${withSection.length} câu hỏi vào ${dialogState.section}`);
   };
 
@@ -325,6 +425,7 @@ export default function Exams() {
           title: "",
           time: null,
           type: "",
+          audioUrl: "",
         });
         setDataInputQuestion("", []);
         setQuestionsData([]);
@@ -355,7 +456,7 @@ export default function Exams() {
     // if listening section present we require an audio file
     const hasListening = questionsData?.some((q) => q.section === "LISTENING");
     if (hasListening && !formExamData.audioUrl) {
-      toast.error("Bài nghe yêu cầu phải có file audio (import từ Admin)");
+      toast.error("Bài nghe yêu cầu phải có file Audio");
       return false;
     }
 
@@ -397,7 +498,9 @@ export default function Exams() {
   //   TN  → Single Choice (Question Content can be empty)
   //   MT  → Matching (options A-E or A-F, each sub-question matches to one option)
   // note: audio file is mandatory when any listening questions exist (import via Upload Audio above)
-  const HEADERS = [
+  // the base set of columns used by the Excel templates. propositions are
+  // included after the explanation so that MT worksheets can provide them.
+  const BASE_HEADERS = [
     "Type (TN/DS/MT)",
     "Question Content",
     "Option A",
@@ -417,25 +520,30 @@ export default function Exams() {
     "Proposition F",
   ];
 
+  // listening import adds an extra column where the audio URL for the entire
+  // section may be supplied (will read only from first data row).
+  const HEADERS = (section) =>
+    section === "LISTENING" ? [...BASE_HEADERS, "Audio URL"] : BASE_HEADERS;
+
   
   const SAMPLE_ROWS_BY_SECTION = {
     READING: [
       ["[VÍ DỤ] MT", "Tỉnh nào sau đây", "Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "", "", "B", "Hà Nội là thủ đô của Việt Nam"],
     ],
     LISTENING: [
-      // True/False
-      ["[VÍ DỤ] DS", "Nghe và xác định: Người đó đang ăn sáng.", "True", "False", "", "", "", "", "A", ""],
+      // audio url column is optional; put the audio link in the first data row's last cell
+      ["[VÍ DỤ] DS", "Nghe và xác định: Người đó đang ăn sáng.", "True", "False", "", "", "", "", "A", "", "https://example.com/audio.mp3"],
       // Single Choice
-      ["[VÍ DỤ] TN", "Người phụ nữ muốn làm gì vào cuối tuần?", "Đi mua sắm", "Xem phim", "Đi dã ngoại", "", "", "", "B", ""],
+      ["[VÍ DỤ] TN", "Người phụ nữ muốn làm gì vào cuối tuần?", "Đi mua sắm", "Xem phim", "Đi dã ngoại", "", "", "", "B", "", "https://example.com/audio.mp3"],
       // Matching – Option A-F = đáp án cho sub-question 1-6 (ảnh A-F upload riêng)
-      ["[VÍ DỤ] MT", "Nghe hội thoại và nối câu hỏi với hình ảnh (A-F)", "B", "A", "D", "F", "C", "E", "", ""],
+      ["[VÍ DỤ] MT", "Nghe hội thoại và nối câu hỏi với hình ảnh (A-F)", "B", "A", "D", "F", "C", "E", "", "", "https://example.com/audio.mp3"],
     ],
     WRITING: [
       ["[VÍ DỤ] WT", "Viết một đoạn văn ngắn về chủ đề gia đình.", "Your answer here", "Khuyến khích dùng từ vựng đã học"]
     ],
   };
 
-  const buildAndDownloadXLSX = (rows, filename, headers = HEADERS) => {
+  const buildAndDownloadXLSX = (rows, filename, headers = BASE_HEADERS) => {
     const XLSX = require("xlsx");
     const wsData = [headers, ...rows];
     const wb = XLSX.utils.book_new();
@@ -457,7 +565,7 @@ export default function Exams() {
     if (rows && rows.length > 0) {
       const headersFor = section === "WRITING"
         ? ["Type (WT)", "Question Content", "Correct Answer", "Explanation"]
-        : HEADERS;
+        : HEADERS(section);
       buildAndDownloadXLSX(rows, `question_sample_${section.toLowerCase()}.xlsx`, headersFor);
     }
   };
@@ -568,6 +676,18 @@ export default function Exams() {
             ...q,
             section,
           }));
+
+          // if the imported sheet contained an audio URL column for listening,
+          // pick it up from the first data row and populate formExamData.
+          if (section === "LISTENING" && rows.length > 1) {
+            const audioColIndex = BASE_HEADERS.length; // last column
+            const maybeUrl = String(rows[1][audioColIndex] || "").trim();
+            if (maybeUrl) {
+              setFormExamData((prev) => ({ ...prev, audioUrl: maybeUrl }));
+              toast.info("Âm thanh được lấy từ file import");
+            }
+          }
+
           if (newQuestions.length > 0) {
             setQuestionsData((prev) => (prev ? [...prev, ...newQuestions] : [...newQuestions]));
             toast.success(`Đã thêm ${newQuestions.length} câu hỏi vào ${section}!`);
@@ -604,6 +724,16 @@ export default function Exams() {
             result.push(cell);
             return result;
           });
+          // for listening section, first data row may carry audio URL in the extra column
+          if (section === "LISTENING" && rows.length > 1) {
+            const audioColIndex = BASE_HEADERS.length;
+            const maybeUrl = String(rows[1][audioColIndex] || "").trim();
+            if (maybeUrl) {
+              setFormExamData((prev) => ({ ...prev, audioUrl: maybeUrl }));
+              toast.info("Âm thanh được lấy từ file import");
+            }
+          }
+
           const newQuestions = parseRowsToQuestions(rows).map((q) => ({
             ...q,
             section,
@@ -709,7 +839,7 @@ export default function Exams() {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteExam(exam?._id)}
+                          onClick={() => handleDeleteExamConfirm(exam?._id)}
                           className="text-gray-400 hover:text-red-600 transition-colors"
                           title="Delete Exam"
                         >
@@ -748,10 +878,29 @@ export default function Exams() {
           </div>
         </div>
       </div>
+      {/* Confirmation dialogs for cancel and deleting an exam */}
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        title="Xác nhận hủy"
+        message="Bạn có chắc muốn hủy? Mọi thay đổi sẽ không được ghi nhận!"
+        onCancel={() => setCancelConfirmOpen(false)}
+        onConfirm={performCancel}
+        confirmText="Hủy"
+      />
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Xác nhận xóa đề thi"
+        message="Bạn có chắc chắn muốn xóa đề thi này? Hành động này không thể hoàn tác."
+        onCancel={() => setDeleteConfirmOpen(false)}
+        onConfirm={performDeleteExam}
+        confirmText="Xóa"
+      />
+
       {/* Exam Form */}
       <ExamForm
         formExamData={formExamData}
         questionsData={questionsData}
+        audioInputRef={audioInputRef}
 
         handleChangeInputQuestion={handleChangeInputQuestion}
 
@@ -760,6 +909,7 @@ export default function Exams() {
         addWritingQuestion={addWritingQuestion}
 
         handleUpsertExam={handleUpsertExam}
+        handleCancel={handleCancel}
 
         handleUploadAudio={handleUploadAudio}
         handleDeleteAudio={handleDeleteAudio}

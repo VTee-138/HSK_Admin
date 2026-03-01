@@ -23,7 +23,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { styled } from "@mui/material/styles";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 
 const VisuallyHiddenInput = styled("input")({
   clip: "rect(0 0 0 0)",
@@ -37,22 +38,25 @@ const VisuallyHiddenInput = styled("input")({
   width: 1,
 });
 
-// ─── Delete Confirmation Dialog ─────────────────────────────────────────────
-function DeleteConfirmDialog({ open, onCancel, onConfirm }) {
+// ─── Reusable confirmation dialog ───────────────────────────────────
+function ConfirmDialog({
+  open,
+  title = "Xác nhận",
+  message = "Bạn có chắc chắn?",
+  cancelText,
+  confirmText,
+  onCancel,
+  onConfirm,
+}) {
   return (
     <Dialog open={open} onClose={onCancel}>
-      <DialogTitle className="text-red-600 font-bold">
-        Xác nhận xóa câu hỏi
-      </DialogTitle>
+      <DialogTitle className="text-red-600 font-bold">{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText>
-          Bạn có chắc chắn muốn xóa câu hỏi này? Hành động này không thể hoàn
-          tác.
-        </DialogContentText>
+        <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel} className="normal-case text-gray-600">
-          Hủy
+          {cancelText || "Hủy"}
         </Button>
         <Button
           onClick={onConfirm}
@@ -60,7 +64,7 @@ function DeleteConfirmDialog({ open, onCancel, onConfirm }) {
           variant="contained"
           className="normal-case"
         >
-          Xóa
+          {confirmText || "Xác nhận"}
         </Button>
       </DialogActions>
     </Dialog>
@@ -209,11 +213,6 @@ const GroupPreviewItem = ({ group, startIndex, onDelete, onEdit, onMoveUp, onMov
         </div>
       </div>
 
-      <DeleteConfirmDialog
-        open={false}
-        onCancel={() => {}}
-        onConfirm={() => {}}
-      />
     </>
   );
 };
@@ -393,13 +392,16 @@ const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, 
         </div>
       </div>
 
-      <DeleteConfirmDialog
+      <ConfirmDialog
         open={confirmOpen}
+        title="Xác nhận xóa câu hỏi"
+        message="Bạn có chắc chắn muốn xóa câu hỏi này? Hành động này không thể hoàn tác."
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => {
           setConfirmOpen(false);
           onDelete();
         }}
+        confirmText="Xóa"
       />
     </>
   );
@@ -407,11 +409,13 @@ const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, 
 
 export default function ExamForm({
   formExamData,
+  audioInputRef,
   handleChangeInputQuestion,
   addReadingQuestion,
   addListeningQuestion,
   addWritingQuestion,
   handleUpsertExam,
+  handleCancel,
   questionsData,
   handleUploadAudio,
   handleDeleteAudio,
@@ -422,6 +426,21 @@ export default function ExamForm({
   handleReorderQuestion,
   handleMoveGroup,
 }) {
+  const [visibleSection, setVisibleSection] = useState("LISTENING");
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+
+  const handleAddManual = (fn) => {
+    fn();
+    toast.warn("Hãy nhấn hoàn thành nếu muốn lưu các câu đã nhập");
+  };
+
+  // when the parent clears audioUrl (e.g. removal or loading a draft without audio) make sure
+  // the hidden file input is also reset so subsequent uploads still fire onChange.
+  useEffect(() => {
+    if (!formExamData.audioUrl && audioInputRef && audioInputRef.current) {
+      audioInputRef.current.value = null;
+    }
+  }, [formExamData.audioUrl, audioInputRef]);
   // Filter questions by section with original index tracking
   const readingQuestions = questionsData
     .map((q, i) => ({ ...q, _origIndex: i }))
@@ -513,9 +532,32 @@ export default function ExamForm({
             <Layers className="w-5 h-5 text-gray-500" />
             {"Qu\u1ea3n L\u00fd C\u00e2u H\u1ecfi"}
           </h2>
+          {/* section tabs */}
+          <div className="flex gap-2 mb-4">
+            {[
+              { label: "Listening", key: "LISTENING" },
+              { label: "Reading", key: "READING" },
+              { label: "Writing", key: "WRITING" },
+            ].map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                className={`px-3 py-1 rounded-md text-sm font-medium focus:outline-none ${
+                  visibleSection === s.key
+                    ? "bg-red-600 text-white"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+                onClick={() => setVisibleSection(s.key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
 
           {/* ── Section Listening ───────────────────────────────────── */}
-          <div className="mb-4 flex flex-row justify-between items-center mt-6">
+          {visibleSection === "LISTENING" && (
+            <>
+            <div className="mb-4 flex flex-row justify-between items-center mt-6">
             <span className="font-medium text-gray-700">
               Section Listening - {"Danh s\u00e1ch c\u00e2u h\u1ecfi nghe"}
             </span>
@@ -536,13 +578,14 @@ export default function ExamForm({
                   type="file"
                   accept="audio/*"
                   onChange={handleUploadAudio}
+                  ref={audioInputRef}
                 />
               </Button>
               <Button
                 variant="outlined"
                 className="h-8 text-xs border-red-500 text-red-600 hover:bg-red-50 normal-case"
                 startIcon={<Plus size={14} />}
-                onClick={() => addListeningQuestion()}
+                onClick={() => handleAddManual(addListeningQuestion)}
               >
                 {"Th\u00eam c\u00e2u th\u1ee7 c\u00f4ng"}
               </Button>
@@ -572,7 +615,7 @@ export default function ExamForm({
             </div>
           )}
 
-          {listeningQuestions.length === 0 ? (
+          {visibleSection === "LISTENING" && (listeningQuestions.length === 0 ? (
             <p className="text-gray-500 italic mb-5">
               {"Ch\u01b0a c\u00f3 c\u00e2u h\u1ecfi n\u00e0o \u0111\u01b0\u1ee3c th\u00eam."}
             </p>
@@ -612,31 +655,36 @@ export default function ExamForm({
                 );
               })}
             </div>
+          ))}
+
+            </>
           )}
 
           {/* ── Section Reading ─────────────────────────────────────── */}
-          <div className="mb-4 flex flex-row justify-between items-center mt-6">
-            <span className="font-medium text-gray-700">
-              Section Reading - {"Danh s\u00e1ch c\u00e2u h\u1ecfi \u0111\u1ecdc"}
-            </span>
-            <div className="flex items-center gap-2">
-              <SectionExcelButtons
-                section="READING"
-                handleDownloadSampleForSection={handleDownloadSampleForSection}
-                handleImportExcelForSection={handleImportExcelForSection}
-              />
-              <Button
-                variant="outlined"
-                className="h-8 text-xs border-red-500 text-red-600 hover:bg-red-50 normal-case"
-                startIcon={<Plus size={14} />}
-                onClick={() => addReadingQuestion()}
-              >
-                {"Th\u00eam c\u00e2u th\u1ee7 c\u00f4ng"}
-              </Button>
-            </div>
-          </div>
+          {visibleSection === "READING" && (
+            <>
+              <div className="mb-4 flex flex-row justify-between items-center mt-6">
+                <span className="font-medium text-gray-700">
+                  Section Reading - {"Danh s\u00e1ch c\u00e2u h\u1ecfi \u0111\u1ecdc"}
+                </span>
+                <div className="flex items-center gap-2">
+                  <SectionExcelButtons
+                    section="READING"
+                    handleDownloadSampleForSection={handleDownloadSampleForSection}
+                    handleImportExcelForSection={handleImportExcelForSection}
+                  />
+                  <Button
+                    variant="outlined"
+                    className="h-8 text-xs border-red-500 text-red-600 hover:bg-red-50 normal-case"
+                    startIcon={<Plus size={14} />}
+                    onClick={() => addReadingQuestion()}
+                  >
+                    {"Th\u00eam c\u00e2u th\u1ee7 c\u00f4ng"}
+                  </Button>
+                </div>
+              </div>
 
-          {readingQuestions.length === 0 ? (
+              {readingQuestions.length === 0 ? (
             <p className="text-gray-500 italic mb-5">
               {"Ch\u01b0a c\u00f3 c\u00e2u h\u1ecfi n\u00e0o \u0111\u01b0\u1ee3c th\u00eam."}
             </p>
@@ -677,30 +725,34 @@ export default function ExamForm({
             </div>
           )}
 
+            </>
+          )}
 
           {/* ── Section Writing ─────────────────────────────────────── */}
-          <div className="mb-4 flex flex-row justify-between items-center mt-6">
-            <span className="font-medium text-gray-700">
-              Section Writing - {"Danh s\u00e1ch c\u00e2u h\u1ecfi vi\u1ebft"}
-            </span>
-            <div className="flex items-center gap-2">
-              <SectionExcelButtons
-                section="WRITING"
-                handleDownloadSampleForSection={handleDownloadSampleForSection}
-                handleImportExcelForSection={handleImportExcelForSection}
-              />
-              <Button
-                variant="outlined"
-                className="h-8 text-xs border-red-500 text-red-600 hover:bg-red-50 normal-case"
-                startIcon={<Plus size={14} />}
-                onClick={() => addWritingQuestion()}
-              >
-                {"Th\u00eam c\u00e2u th\u1ee7 c\u00f4ng"}
-              </Button>
-            </div>
-          </div>
+          {visibleSection === "WRITING" && (
+            <>
+              <div className="mb-4 flex flex-row justify-between items-center mt-6">
+                <span className="font-medium text-gray-700">
+                  Section Writing - {"Danh s\u00e1ch c\u00e2u h\u1ecfi vi\u1ebft"}
+                </span>
+                <div className="flex items-center gap-2">
+                  <SectionExcelButtons
+                    section="WRITING"
+                    handleDownloadSampleForSection={handleDownloadSampleForSection}
+                    handleImportExcelForSection={handleImportExcelForSection}
+                  />
+                  <Button
+                    variant="outlined"
+                    className="h-8 text-xs border-red-500 text-red-600 hover:bg-red-50 normal-case"
+                    startIcon={<Plus size={14} />}
+                    onClick={() => addWritingQuestion()}
+                  >
+                    {"Th\u00eam c\u00e2u th\u1ee7 c\u00f4ng"}
+                  </Button>
+                </div>
+              </div>
 
-          {writingQuestions.length === 0 ? (
+              {writingQuestions.length === 0 ? (
             <p className="text-gray-500 italic mb-5">
               {"Ch\u01b0a c\u00f3 c\u00e2u h\u1ecfi n\u00e0o \u0111\u01b0\u1ee3c th\u00eam."}
             </p>
@@ -740,7 +792,8 @@ export default function ExamForm({
               })}
             </div>
           )}
-        </div>
+            </>
+          )}
 
         <Divider className="my-2 border-gray-100" />
 
@@ -754,6 +807,26 @@ export default function ExamForm({
           >
             Save Exam
           </Button>
+          <Button
+            variant="outlined"
+            color="inherit"
+            className="normal-case"
+            onClick={handleCancel}
+          >
+            Cancel
+          </Button>
+          <ConfirmDialog
+            open={cancelConfirmOpen}
+            title="Xác nhận hủy"
+            message="Bạn có chắc muốn hủy? Mọi thay đổi sẽ không được ghi nhận!"
+            onCancel={() => setCancelConfirmOpen(false)}
+            onConfirm={() => {
+              setCancelConfirmOpen(false);
+              if (handleCancel) handleCancel();
+            }}
+            confirmText="Hủy"
+          />
+        </div>
         </div>
       </div>
     </div>
