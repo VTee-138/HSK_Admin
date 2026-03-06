@@ -73,6 +73,11 @@ export default function Exams() {
     type: "HSK1",
     access: "PUBLIC",
     audioUrl: "",
+    skillTimes: {
+      listening: 0,
+      reading: 0,
+      writing: 0,
+    },
   });
 
   // ref to the hidden audio file input so we can clear its value when needed
@@ -158,6 +163,11 @@ export default function Exams() {
       type: "HSK1",
       access: "PUBLIC",
       audioUrl: "",
+      skillTimes: {
+        listening: 0,
+        reading: 0,
+        writing: 0,
+      },
     });
     setQuestionsData([]);
     if (audioInputRef.current) {
@@ -386,10 +396,19 @@ export default function Exams() {
 
   const handleChangeInputQuestion = (event) => {
     let { name, value } = event.target;
-    setFormExamData((prevFormData) => ({
-      ...prevFormData,
-      [name]: value,
-    }));
+    
+    // Handle nested skillTimes object
+    if (name === "skillTimes") {
+      setFormExamData((prevFormData) => ({
+        ...prevFormData,
+        skillTimes: value,
+      }));
+    } else {
+      setFormExamData((prevFormData) => ({
+        ...prevFormData,
+        [name]: value,
+      }));
+    }
   };
 
   const handleUpsertExam = async () => {
@@ -408,6 +427,11 @@ export default function Exams() {
       time: parseInt(formExamData.time),
       type: formExamData.type,
       access: formExamData.access || "PUBLIC",
+      skillTimes: {
+        listening: parseInt(formExamData.skillTimes?.listening || 0),
+        reading: parseInt(formExamData.skillTimes?.reading || 0),
+        writing: parseInt(formExamData.skillTimes?.writing || 0),
+      },
       questions: questionsData,
       numberOfQuestions: questionsData?.length || 0,
     };
@@ -426,6 +450,11 @@ export default function Exams() {
           time: null,
           type: "",
           audioUrl: "",
+          skillTimes: {
+            listening: 0,
+            reading: 0,
+            writing: 0,
+          },
         });
         setDataInputQuestion("", []);
         setQuestionsData([]);
@@ -450,6 +479,21 @@ export default function Exams() {
 
     if (!formExamData.time) {
       toast.error("Vui lòng nhập thời gian thi");
+      return false;
+    }
+
+    // Validate skill times sum equals total time
+    const skillTimes = formExamData.skillTimes || {};
+    const listeningTime = parseInt(skillTimes.listening || 0);
+    const readingTime = parseInt(skillTimes.reading || 0);
+    const writingTime = parseInt(skillTimes.writing || 0);
+    const totalSkillTime = listeningTime + readingTime + writingTime;
+    const totalTime = parseInt(formExamData.time);
+
+    if (totalSkillTime !== totalTime) {
+      toast.error(
+        `Tổng thời gian các kỹ năng (${totalSkillTime} phút) phải bằng tổng thời gian thi (${totalTime} phút)`
+      );
       return false;
     }
 
@@ -539,7 +583,8 @@ export default function Exams() {
       ["[VÍ DỤ] MT", "Nghe hội thoại và nối câu hỏi với hình ảnh (A-F)", "B", "A", "D", "F", "C", "E", "", "", "https://example.com/audio.mp3"],
     ],
     WRITING: [
-      ["[VÍ DỤ] WT", "Viết một đoạn văn ngắn về chủ đề gia đình.", "Your answer here", "Khuyến khích dùng từ vựng đã học"]
+      ["[VÍ DỤ] WT", "Viết một đoạn văn ngắn về chủ đề gia đình.", "Your answer here", "Khuyến khích dùng từ vựng đã học"],
+      ["[VÍ DỤ] WR", "面包/一个/商店里/没有/也", "面包一个商店里没有 也", "(Đáp án viết liền không dấu '/')"]
     ],
   };
 
@@ -564,7 +609,7 @@ export default function Exams() {
     const rows = SAMPLE_ROWS_BY_SECTION[section];
     if (rows && rows.length > 0) {
       const headersFor = section === "WRITING"
-        ? ["Type (WT)", "Question Content", "Correct Answer", "Explanation"]
+        ? ["Type (WT/WR)", "Question Content", "Correct Answer", "Explanation"]
         : HEADERS(section);
       buildAndDownloadXLSX(rows, `question_sample_${section.toLowerCase()}.xlsx`, headersFor);
     }
@@ -596,8 +641,8 @@ export default function Exams() {
         correctAnswer: "",
         explain: "",
       };
-      // writing type uses columns 2 and 3 only
-      if (type === "WT") {
+      // writing types (WT and WR) use columns 2 and 3 only
+      if (type === "WT" || type === "WR") {
         newQ.correctAnswer = String(parts[2] || "").trim();
         newQ.explain = String(parts[3] || "").trim();
         questions.push(newQ);

@@ -30,6 +30,7 @@ const TYPES_BY_SECTION = {
   ],
   WRITING: [
     { value: "WT", label: "Writing (tự luận)" },
+    { value: "WR", label: "Word Arrangement (sắp xếp từ)" },
   ],
 };
 
@@ -262,6 +263,17 @@ export default function QuestionDialog({
         explain: explain,
       };
     }
+    if (type === "WR") {
+      // Word Arrangement: content contains "/" separators
+      return {
+        question: qName,
+        type: "WR",
+        contentQuestions: content, // e.g., "我/还想/喝酒."
+        imageUrl,
+        correctAnswer: correctAnswer, // optional: model answer or explanation
+        explain: explain,
+      };
+    }
     return null;
   };
 
@@ -422,7 +434,13 @@ export default function QuestionDialog({
         {/* Question Content — not shown for MT (description is optional) */}
         {type !== "MT" && (
           <TextField
-            label={type === "WT" ? "Nội dung câu hỏi / yêu cầu" : "Nội dung câu hỏi (có thể để trống)"}
+            label={
+              type === "WT"
+                ? "Nội dung câu hỏi / yêu cầu"
+                : type === "WR"
+                ? "Nội dung câu (dùng '/' phân tách từ)"
+                : "Nội dung câu hỏi (có thể để trống)"
+            }
             multiline
             rows={2}
             fullWidth
@@ -441,6 +459,34 @@ export default function QuestionDialog({
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
+        )}
+        {type === "WR" && (
+          <>
+            {content && (
+              <div className="p-2 bg-gray-100 rounded border border-gray-200">
+                <Typography variant="subtitle2" className="mb-1">
+                  Xem trước sắp xếp từ:
+                </Typography>
+                <div className="flex flex-wrap gap-2">
+                  {content.split("/").map((w,idx)=>(
+                    <span key={idx} className="px-3 py-1 bg-white border rounded">{w}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <TextField
+              label="Đáp án đúng (thứ tự sau khi sắp xếp)"
+              multiline
+              rows={1}
+              fullWidth
+              size="small"
+              value={correctAnswer}
+              onChange={(e) => setCorrectAnswer(e.target.value)}
+            />
+            {!correctAnswer && (
+              <Typography variant="caption" color="error">Vui lòng nhập đáp án đúng</Typography>
+            )}
+          </>
         )}
 
         {/* ── TN Fields ── */}

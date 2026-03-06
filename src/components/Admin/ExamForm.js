@@ -15,6 +15,7 @@ import {
   FileText,
   Layers,
   CheckCircle,
+  XCircle,
   Plus,
   Download,
   Trash2,
@@ -524,6 +525,120 @@ export default function ExamForm({
               ))}
             </TextField>
           </div>
+        </div>
+
+        {/* Skill Times Section */}
+        <div className="mb-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-blue-600" />
+            {"Phân Bổ Thời Gian Các Kỹ Năng"}
+          </h2>
+
+          <p className="text-sm text-gray-600 mb-4">
+            {"Tổng thời gian các kỹ năng (Listening + Reading + Writing) phải bằng tổng thời gian thi: "}<span className="font-bold text-gray-900">{formExamData?.time || 0}{" phút"}</span>
+          </p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
+            <TextField
+              type="number"
+              label={"Nghe (Listening) - phút *"}
+              name="listening"
+              value={formExamData?.skillTimes?.listening || 0}
+              onChange={(e) => {
+                const { name, value } = e.target;
+                handleChangeInputQuestion({
+                  target: {
+                    name: "skillTimes",
+                    value: {
+                      ...formExamData.skillTimes,
+                      [name]: parseInt(value) || 0,
+                    },
+                  },
+                });
+              }}
+              variant="outlined"
+              fullWidth
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ min: 0 }}
+            />
+
+            <TextField
+              type="number"
+              label={"Đọc (Reading) - phút *"}
+              name="reading"
+              value={formExamData?.skillTimes?.reading || 0}
+              onChange={(e) => {
+                const { name, value } = e.target;
+                handleChangeInputQuestion({
+                  target: {
+                    name: "skillTimes",
+                    value: {
+                      ...formExamData.skillTimes,
+                      [name]: parseInt(value) || 0,
+                    },
+                  },
+                });
+              }}
+              variant="outlined"
+              fullWidth
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ min: 0 }}
+            />
+
+            <TextField
+              type="number"
+              label={"Viết (Writing) - phút *"}
+              name="writing"
+              value={formExamData?.skillTimes?.writing || 0}
+              onChange={(e) => {
+                const { name, value } = e.target;
+                handleChangeInputQuestion({
+                  target: {
+                    name: "skillTimes",
+                    value: {
+                      ...formExamData.skillTimes,
+                      [name]: parseInt(value) || 0,
+                    },
+                  },
+                });
+              }}
+              variant="outlined"
+              fullWidth
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ min: 0 }}
+            />
+          </div>
+
+          {/* Validation Message */}
+          {(() => {
+            const skillTimes = formExamData?.skillTimes || {};
+            const listeningTime = parseInt(skillTimes.listening || 0);
+            const readingTime = parseInt(skillTimes.reading || 0);
+            const writingTime = parseInt(skillTimes.writing || 0);
+            const totalSkillTime = listeningTime + readingTime + writingTime;
+            const totalTime = parseInt(formExamData?.time || 0);
+
+            if (totalSkillTime === totalTime) {
+              return (
+                <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded border border-green-300">
+                  <CheckCircle size={18} className="text-green-600" />
+                  <span>{"Phân bổ thời gian hợp lệ!"}</span>
+                </div>
+              );
+            } else {
+              return (
+                <div className="flex items-center gap-2 text-red-700 bg-red-50 p-3 rounded border border-red-300">
+                  <XCircle size={18} className="text-red-600" />
+                  <span>
+                    {`Tổng thời gian các kỹ năng (${totalSkillTime} phút) phải bằng ${totalTime} phút`}
+                  </span>
+                </div>
+              );
+            }
+          })()}
         </div>
 
         {/* Questions Section */}
