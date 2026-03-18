@@ -112,9 +112,6 @@ export default function QuestionDialog({
   ]);
   const [correctAnswer, setCorrectAnswer] = useState("");
 
-  // For WR/WT multi answers
-  const [correctAnswers, setCorrectAnswers] = useState([""]);
-
   // MT — list of answers for sub-questions. default to five like legacy behavior
   const [mtAnswers, setMtAnswers] = useState(["", "", "", "", ""]);
   const [mtOptions, setMtOptions] = useState(["", "", "", "", ""]); // proposition texts for reading MT
@@ -186,16 +183,6 @@ export default function QuestionDialog({
       }
       // explanation
       setExplain(editQuestion.explain || "");
-
-      if (editQuestion.type === "WR" || editQuestion.type === "WT") {
-        if (Array.isArray(editQuestion.correctAnswers) && editQuestion.correctAnswers.length) {
-          setCorrectAnswers(editQuestion.correctAnswers);
-          setCorrectAnswer(editQuestion.correctAnswers[0] || "");
-        } else {
-          setCorrectAnswers(editQuestion.correctAnswer ? [editQuestion.correctAnswer] : [""]);
-          setCorrectAnswer(editQuestion.correctAnswer || "");
-        }
-      }
     } else {
       resetForm(nextNumber);
       setSessionQuestions([]);
@@ -267,26 +254,23 @@ export default function QuestionDialog({
       }));
     }
     if (type === "WT") {
-      const normalizedAnswers = correctAnswers.filter((a) => String(a || "").trim().length > 0);
       return {
         question: qName,
         type: "WT",
         contentQuestions: content,
         imageUrl,
-        correctAnswer: normalizedAnswers[0] || correctAnswer || "",
-        correctAnswers: normalizedAnswers,
+        correctAnswer: correctAnswer,
         explain: explain,
       };
     }
     if (type === "WR") {
-      const normalizedAnswers = correctAnswers.filter((a) => String(a || "").trim().length > 0);
+      // Word Arrangement: content contains "/" separators
       return {
         question: qName,
         type: "WR",
         contentQuestions: content, // e.g., "我/还想/喝酒."
         imageUrl,
-        correctAnswer: normalizedAnswers[0] || correctAnswer || "",
-        correctAnswers: normalizedAnswers,
+        correctAnswer: correctAnswer, // optional: model answer or explanation
         explain: explain,
       };
     }
@@ -373,7 +357,6 @@ export default function QuestionDialog({
       { id: "D", value: "" },
     ]);
     setCorrectAnswer("");
-    setCorrectAnswers([""]);
     setMtAnswers(["", "", "", "", ""]);
     setMtOptions(["", "", "", "", ""]);
     setExplain("");
@@ -477,9 +460,9 @@ export default function QuestionDialog({
             onChange={(e) => setContent(e.target.value)}
           />
         )}
-        {(type === "WR" || type === "WT") && (
+        {type === "WR" && (
           <>
-            {type === "WR" && content && (
+            {content && (
               <div className="p-2 bg-gray-100 rounded border border-gray-200">
                 <Typography variant="subtitle2" className="mb-1">
                   Xem trước sắp xếp từ:
@@ -491,47 +474,17 @@ export default function QuestionDialog({
                 </div>
               </div>
             )}
-
-            <Typography variant="subtitle2" className="text-gray-600">Đáp án đúng (có thể nhập 2-3 đáp án)</Typography>
-            <div className="space-y-2">
-              {correctAnswers.map((ans, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
-                  <TextField
-                    label={`Đáp án ${idx + 1}`}
-                    fullWidth
-                    size="small"
-                    value={ans}
-                    onChange={(e) => {
-                      const next = [...correctAnswers];
-                      next[idx] = e.target.value;
-                      setCorrectAnswers(next);
-                    }}
-                  />
-                  <IconButton
-                    size="small"
-                    color="error"
-                    disabled={correctAnswers.length <= 1}
-                    onClick={() => {
-                      const next = correctAnswers.filter((_, i) => i !== idx);
-                      setCorrectAnswers(next.length ? next : [""]);
-                    }}
-                  >
-                    <Trash2 size={16} />
-                  </IconButton>
-                </div>
-              ))}
-            </div>
-            <Button
-              variant="outlined"
+            <TextField
+              label="Đáp án đúng (thứ tự sau khi sắp xếp)"
+              multiline
+              rows={1}
+              fullWidth
               size="small"
-              className="normal-case"
-              startIcon={<Plus size={14} />}
-              onClick={() => setCorrectAnswers([...correctAnswers, ""])}
-            >
-              Thêm phương án đúng
-            </Button>
-            {correctAnswers.every((v) => !v.trim()) && (
-              <Typography variant="caption" color="error">Vui lòng nhập ít nhất 1 đáp án đúng</Typography>
+              value={correctAnswer}
+              onChange={(e) => setCorrectAnswer(e.target.value)}
+            />
+            {!correctAnswer && (
+              <Typography variant="caption" color="error">Vui lòng nhập đáp án đúng</Typography>
             )}
           </>
         )}

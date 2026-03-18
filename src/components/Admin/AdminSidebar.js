@@ -4,11 +4,10 @@ import {
   LayoutDashboard, 
   Users, 
   FileText,
-  GraduationCap,
   MoreVertical,
   LogOut,
 } from 'lucide-react';
-import logo from '../../images/logo.png';
+
 
 export default function AdminSidebar({ 
   isSidebarOpen, 
@@ -63,20 +62,25 @@ export default function AdminSidebar({
     to="/"
     className="group flex items-center gap-3 px-3 py-2 rounded-2xl transition-all hover:bg-gray-100"
   >
-    <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-red-700 shadow-md group-hover:shadow-lg transition-all">
-      <img
-        src="/logo.png"
-        alt="86HSK"
-        className="w-14 h-14 object-contain"
-      />
-    </div>
-
-    <div className="leading-tight">
-      <div className="text-lg font-bold text-red-600 tracking-wide">
-        86HSK
+    <div className="flex items-center gap-3">
+      <div style={{
+        background: "linear-gradient(135deg, #dc2626, #b91c1c)",
+        borderRadius: "12px",
+        padding: "6px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 3px 10px rgba(220,38,38,0.35)",
+      }}>
+        <img
+          src="/logo.png"
+          alt="86HSK"
+          style={{ height: "44px", objectFit: "contain" }}
+        />
       </div>
-      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-        Admin
+      <div className="leading-tight">
+        <div className="text-sm font-bold text-gray-900 tracking-wide">86HSK</div>
+        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</div>
       </div>
     </div>
   </Link>
