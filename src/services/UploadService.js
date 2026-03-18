@@ -123,12 +123,12 @@ export const UploadService = {
       return { isValid: false, error: "Chỉ cho phép upload file audio" };
     }
 
-    // Kiểm tra kích thước file (20MB)
-    const maxSize = 20 * 1024 * 1024; // 20MB
+    // Kiểm tra kích thước file (40MB)
+    const maxSize = 40 * 1024 * 1024; // 40MB
     if (file.size > maxSize) {
       return {
         isValid: false,
-        error: "File quá lớn. Kích thước tối đa là 20MB",
+        error: "File quá lớn. Kích thước tối đa là 40MB",
       };
     }
 

@@ -543,15 +543,16 @@ export default function ExamForm({
               type="number"
               label={"Nghe (Listening) - phút *"}
               name="listening"
-              value={formExamData?.skillTimes?.listening || 0}
+              value={formExamData?.skillTimes?.listening ?? ""}
               onChange={(e) => {
                 const { name, value } = e.target;
+                const normalized = value === "" ? "" : Number(value);
                 handleChangeInputQuestion({
                   target: {
                     name: "skillTimes",
                     value: {
                       ...formExamData.skillTimes,
-                      [name]: parseInt(value) || 0,
+                      [name]: normalized,
                     },
                   },
                 });
@@ -567,15 +568,16 @@ export default function ExamForm({
               type="number"
               label={"Đọc (Reading) - phút *"}
               name="reading"
-              value={formExamData?.skillTimes?.reading || 0}
+              value={formExamData?.skillTimes?.reading ?? ""}
               onChange={(e) => {
                 const { name, value } = e.target;
+                const normalized = value === "" ? "" : Number(value);
                 handleChangeInputQuestion({
                   target: {
                     name: "skillTimes",
                     value: {
                       ...formExamData.skillTimes,
-                      [name]: parseInt(value) || 0,
+                      [name]: normalized,
                     },
                   },
                 });
@@ -591,15 +593,16 @@ export default function ExamForm({
               type="number"
               label={"Viết (Writing) - phút *"}
               name="writing"
-              value={formExamData?.skillTimes?.writing || 0}
+              value={formExamData?.skillTimes?.writing ?? ""}
               onChange={(e) => {
                 const { name, value } = e.target;
+                const normalized = value === "" ? "" : Number(value);
                 handleChangeInputQuestion({
                   target: {
                     name: "skillTimes",
                     value: {
                       ...formExamData.skillTimes,
-                      [name]: parseInt(value) || 0,
+                      [name]: normalized,
                     },
                   },
                 });
