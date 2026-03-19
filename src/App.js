@@ -5,8 +5,10 @@ import {
   Route,
   RouterProvider,
 } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
+import { useEffect, useRef } from "react";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { get } from "./common/apiClient"; // nếu chưa có, tạo apiClient giống FE hoặc import nếu có
 import PrivateRoute from "./routes/PrivateRoute";
 import PublicRoute from "./routes/PublicRoute";
 import LoginForm from "./components/Auth/LoginForm";
@@ -42,6 +44,45 @@ const router = createBrowserRouter(
   )
 );
 function App() {
+  const currentVersionRef = useRef(null);
+  const VERSION_CHECK_INTERVAL_MS = 60 * 1000;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkAppVersion = async () => {
+      try {
+        const response = await get("/version");
+        const serverVersion = response?.version || "0.0.0";
+
+        if (!isMounted) return;
+
+        if (!currentVersionRef.current) {
+          currentVersionRef.current = serverVersion;
+          console.info("Admin version initialized", serverVersion);
+          return;
+        }
+
+        if (serverVersion !== currentVersionRef.current) {
+          console.info("Admin new version detected", serverVersion, "old", currentVersionRef.current);
+          toast.info("Đã phát hiện bản mới. Tự động nạp lại...");
+          currentVersionRef.current = serverVersion;
+          setTimeout(() => window.location.reload(), 1200);
+        }
+      } catch (err) {
+        console.warn("Không thể kiểm tra version Admin", err);
+      }
+    };
+
+    checkAppVersion();
+    const interval = setInterval(checkAppVersion, VERSION_CHECK_INTERVAL_MS);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <div className="App">
       <RouterProvider router={router} />
