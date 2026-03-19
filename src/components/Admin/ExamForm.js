@@ -121,10 +121,12 @@ function buildDisplayItems(questions) {
         group.push(questions[j]);
         j++;
       }
-      items.push({ type: "group", questions: group, startIndex: i });
+      const startIndex = group[0]?._origIndex ?? i;
+      items.push({ type: "group", questions: group, startIndex });
       i = j;
     } else {
-      items.push({ type: "single", question: q, index: i });
+      const index = q?._origIndex ?? i;
+      items.push({ type: "single", question: q, index });
       i++;
     }
   }

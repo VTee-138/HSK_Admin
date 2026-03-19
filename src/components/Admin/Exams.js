@@ -239,7 +239,9 @@ export default function Exams() {
     let payload = orig;
     if (orig?.matchGroup) {
       const groupQs = questionsData
-        .filter((q) => q.matchGroup === orig.matchGroup)
+        .filter(
+          (q) => q.matchGroup === orig.matchGroup && q.section === orig.section
+        )
         .sort((a, b) => a.matchIndex - b.matchIndex);
       payload = { ...orig, mtAnswers: groupQs.map((g) => g.correctAnswer) };
     }
@@ -281,20 +283,37 @@ export default function Exams() {
     setQuestionsData((prev) => {
       let copy = [...prev];
       if (Array.isArray(updatedQ)) {
-        // When editing a matching group we may change the number of sub-questions.
         const groupId = updatedQ[0]?.matchGroup;
-        if (groupId) {
-          // find range of existing questions with that group
-          const idxs = copy
-            .map((q, i) => (q.matchGroup === groupId ? i : -1))
-            .filter((i) => i !== -1);
-          if (idxs.length) {
-            const start = idxs[0];
-            const before = copy.slice(0, start);
-            const after = copy.slice(idxs[idxs.length - 1] + 1);
-            const newGroup = updatedQ.map((u) => ({ ...u, section: prev[start]?.section || dialogState.section }));
-            copy = [...before, ...newGroup, ...after];
+
+        let start = index;
+        let end = index;
+
+        // Try to locate contiguous group around the index, section-safe
+        if (groupId && index >= 0 && index < copy.length) {
+          while (start - 1 >= 0 && copy[start - 1].matchGroup === groupId && copy[start - 1].section === copy[index].section) {
+            start -= 1;
           }
+          while (end + 1 < copy.length && copy[end + 1].matchGroup === groupId && copy[end + 1].section === copy[index].section) {
+            end += 1;
+          }
+        }
+
+        if (groupId && start <= end && copy[start]?.matchGroup === groupId) {
+          const before = copy.slice(0, start);
+          const after = copy.slice(end + 1);
+          const groupSection = copy[start]?.section || dialogState.section;
+          const newGroup = updatedQ.map((u) => ({ ...u, section: groupSection }));
+          copy = [...before, ...newGroup, ...after];
+        } else {
+          // fallback: range based on index + len, to avoid accidental global wiht same group names
+          const len = updatedQ.length;
+          const newStart = Math.max(0, Math.min(index, copy.length));
+          const newEnd = Math.min(copy.length - 1, newStart + len - 1);
+          const before = copy.slice(0, newStart);
+          const after = copy.slice(newEnd + 1);
+          const groupSection = copy[newStart]?.section || dialogState.section;
+          const newGroup = updatedQ.map((u) => ({ ...u, section: groupSection }));
+          copy = [...before, ...newGroup, ...after];
         }
       } else {
         copy[index] = { ...updatedQ, section: prev[index]?.section || dialogState.section };
@@ -616,7 +635,7 @@ export default function Exams() {
   };
 
   // ─── Shared import parsing ────────────────────────────────────────
-  const parseRowsToQuestions = (rows) => {
+  const parseRowsToQuestions = (rows, section) => {
     // rows = array of arrays, first row is header (skipped)
     const questions = [];
     for (let i = 1; i < rows.length; i++) {
@@ -679,6 +698,7 @@ export default function Exams() {
         }
         // The first sub-question carries the content/image context
         // All sub-questions are type MT with correctAnswer set
+        const groupId = `mt_${section.toLowerCase()}_${Date.now()}_${i}`;
         for (let m = 0; m < matchAnswers.length; m++) {
           const subQ = {
             id: new Date().getTime() + i * 100 + m,
@@ -688,7 +708,7 @@ export default function Exams() {
             imageUrl: "",
             correctAnswer: matchAnswers[m],
             explain: "",
-            matchGroup: `mt_${i}`, // links sub-questions together
+            matchGroup: groupId, // links sub-questions together (within section+import)
             matchIndex: m, // position within the group
             matchTotal: matchAnswers.length, // total in the group
             mtOptions, // may be empty array
@@ -717,7 +737,7 @@ export default function Exams() {
           const wb = XLSX.read(e.target.result, { type: "array" });
           const ws = wb.Sheets[wb.SheetNames[0]];
           const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-          const newQuestions = parseRowsToQuestions(rows).map((q) => ({
+          const newQuestions = parseRowsToQuestions(rows, section).map((q) => ({
             ...q,
             section,
           }));

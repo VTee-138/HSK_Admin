@@ -117,19 +117,22 @@ export default function QuestionDialog({
 
   // MT — list of answers for sub-questions. default to five like legacy behavior
   const [mtAnswers, setMtAnswers] = useState(["", "", "", "", ""]);
-  const [mtOptions, setMtOptions] = useState(["", "", "", "", ""]); // proposition texts for reading MT
+  const [mtOptions, setMtOptions] = useState([]); // proposition texts for reading MT
 
   const [explain, setExplain] = useState(""); // common explanation for any type
 
-  // keep options array same length as mtAnswers
+  // keep options array same size as mtAnswers ONLY when any option text exists.
   useEffect(() => {
+    const hasOptions = mtOptions.some((opt) => String(opt).trim() !== "");
+    if (!hasOptions) return;
+
     if (mtOptions.length !== mtAnswers.length) {
       const copy = [...mtOptions];
       while (copy.length < mtAnswers.length) copy.push("");
       while (copy.length > mtAnswers.length) copy.pop();
       setMtOptions(copy);
     }
-  }, [mtAnswers]);
+  }, [mtAnswers, mtOptions]);
 
   const [mtGroupId] = useState(() => `mt_${Date.now()}`);
 
@@ -149,7 +152,7 @@ export default function QuestionDialog({
   useEffect(() => {
     // mark dirty on any field or session modification
     if (open) setIsDirty(true);
-  }, [type, sttOverride, content, imageUrl, correctAnswer, tnOptions, mtAnswers, mtOptions, explain, sessionQuestions]);
+  }, [open, type, sttOverride, content, imageUrl, correctAnswer, tnOptions, mtAnswers, mtOptions, explain, sessionQuestions]);
 
   // ── seed form when edit mode or when dialog opens ──────────────────
   useEffect(() => {
@@ -173,15 +176,17 @@ export default function QuestionDialog({
         ]);
       }
       // if we're editing a matching question, prefill the answer array
-      if (editQuestion.type === "MT") {
-        if (Array.isArray(editQuestion.mtAnswers)) {
+        if (editQuestion.type === "MT") {
+        if (Array.isArray(editQuestion.mtAnswers) && editQuestion.mtAnswers.length > 0) {
           setMtAnswers(editQuestion.mtAnswers.slice());
         } else {
-          // fall back to single answer
           setMtAnswers([editQuestion.correctAnswer || ""]);
         }
+
         if (Array.isArray(editQuestion.mtOptions)) {
           setMtOptions(editQuestion.mtOptions.slice());
+        } else {
+          setMtOptions([]);
         }
       }
       // explanation
@@ -249,10 +254,14 @@ export default function QuestionDialog({
       // Build N individual sub-questions
       const filled = mtAnswers.filter((a) => a.trim() !== "");
       const groupId = `${mtGroupId}_${Date.now()}`;
-      // keep options array same length as answers; blanks allowed
-      const optionsCopy = [...mtOptions];
-      while (optionsCopy.length < filled.length) optionsCopy.push("");
-      if (optionsCopy.length > filled.length) optionsCopy.length = filled.length;
+
+      const optionsCopy = mtOptions
+        .map((o) => String(o || "").trim())
+        .filter((o) => o !== "");
+
+      // Keep all mtOptions as provided; if no options provided, use empty array
+      const mtOptionsToUse = optionsCopy.length > 0 ? optionsCopy : [];
+
       return filled.map((ans, idx) => ({
         question: `Câu ${sttNum + idx}`,
         type: "MT",
@@ -263,7 +272,7 @@ export default function QuestionDialog({
         matchGroup: groupId,
         matchIndex: idx,
         matchTotal: filled.length,
-        mtOptions: optionsCopy, // include all propositions (possibly empty)
+        mtOptions: mtOptionsToUse,
       }));
     }
     if (type === "WT") {
@@ -699,31 +708,47 @@ export default function QuestionDialog({
           </div>
 
           {/* propositions text for reading MT (one per answer, can be empty) */}
-          <div className="space-y-3">
-            <Typography variant="subtitle2" className="text-gray-600">
-              Văn bản các mệnh đề phía phải (tương ứng mỗi câu, có thể để trống)
-            </Typography>
-            <div className="space-y-2">
-              {mtAnswers.map((_, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-gray-500 w-20 flex-shrink-0">
-                    {String.fromCharCode(65 + idx)}.
-                  </span>
-                  <TextField
-                    size="small"
-                    placeholder="Nội dung"
-                    value={mtOptions[idx] || ""}
-                    onChange={(e) => {
-                      const updated = [...mtOptions];
-                      updated[idx] = e.target.value;
-                      setMtOptions(updated);
-                    }}
-                    className="flex-1"
-                  />
-                </div>
-              ))}
+          {mtOptions.some((opt) => String(opt || "").trim() !== "") ? (
+            <div className="space-y-3">
+              <Typography variant="subtitle2" className="text-gray-600">
+                Văn bản các mệnh đề phía phải (tương ứng mỗi câu, có thể để trống)
+              </Typography>
+              <div className="space-y-2">
+                {Array.from({ length: Math.max(mtAnswers.length, mtOptions.length || 0) }, (_, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-500 w-20 flex-shrink-0">
+                      {String.fromCharCode(65 + idx)}.
+                    </span>
+                    <TextField
+                      size="small"
+                      placeholder="Nội dung"
+                      value={mtOptions[idx] || ""}
+                      onChange={(e) => {
+                        const updated = [...mtOptions];
+                        updated[idx] = e.target.value;
+                        setMtOptions(updated);
+                      }}
+                      className="flex-1"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-3 rounded border border-dashed border-gray-300 bg-gray-50">
+              <Typography variant="body2" className="text-gray-500">
+                Hiện tại chưa có mệnh đề MT (chỉ nhập đáp án A-F cho từng câu). Nếu muốn thêm, nhấn nút bên dưới.
+              </Typography>
+              <Button
+                size="small"
+                startIcon={<Plus size={14} />}
+                className="normal-case text-gray-600 mt-2"
+                onClick={() => setMtOptions(Array(mtAnswers.length).fill(""))}
+              >
+                Thêm mệnh đề
+              </Button>
+            </div>
+          )}
         </div>
         )}
 
