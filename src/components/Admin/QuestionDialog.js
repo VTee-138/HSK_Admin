@@ -217,7 +217,7 @@ export default function QuestionDialog({
       if (!validation.isValid) { toast.error(validation.error); return; }
       const response = await UploadService.uploadImage(file);
       if (response?.data?.imageUrl) {
-        setImageUrl(`${HOSTNAME}${response.data.imageUrl}`);
+        setImageUrl(UploadService.normalizeUrl(HOSTNAME, response.data.imageUrl));
         toast.success("Tải ảnh thành công");
       }
     } catch { toast.error("Tải ảnh thất bại"); }

@@ -1,10 +1,10 @@
 import axios from "axios";
 
 // const REACT_APP_API_BASE_URL = "https://86HSK-server.vercel.app/api/v2";
-const REACT_APP_API_BASE_URL = "http://localhost:4000/api/v2";
+const REACT_APP_API_BASE_URL = "https://backend.tiengtrung86hsk.com/api/v2";
 // const REACT_APP_API_BASE_URL = "https://api.86HSK.edu.vn/api/v2";
 
-export const HOSTNAME = "http://localhost:4000";
+export const HOSTNAME = "https://backend.tiengtrung86hsk.com";
 // export const HOSTNAME = "https://api.86HSK.edu.vn";
 
 // Tạo instance Axios

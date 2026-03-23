@@ -78,7 +78,27 @@ export const UploadService = {
     // Nếu là relative URL thì thêm base URL
     const baseUrl =
       process.env.REACT_APP_API_BASE_URL || "http://localhost:4000";
-    return `${baseUrl}${imageUrl}`;
+    
+    // Normalize URL: remove double slashes
+    const fullUrl = `${baseUrl}${imageUrl}`;
+    return fullUrl.replace(/([^:]\/)\/+/g, "$1");
+  },
+
+  /**
+   * Normalize URL để tránh thừa dấu "/"
+   * @param {string} baseUrl - URL gốc
+   * @param {string} path - Path cần thêm
+   * @returns {string} - URL đầy đủ không thừa "/"
+   */
+  normalizeUrl: (baseUrl, path) => {
+    if (!baseUrl || !path) return baseUrl + path;
+    
+    // Remove trailing slash from baseUrl
+    const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    // Ensure path starts with /
+    const cleanPath = path.startsWith("/") ? path : "/" + path;
+    
+    return cleanBase + cleanPath;
   },
 
   /**

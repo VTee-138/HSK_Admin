@@ -204,7 +204,7 @@ export default function Exams() {
 
       const response = await UploadService.uploadAudio(file);
       if (response && response.data && response.data.audioUrl) {
-        const audioUrl = `${HOSTNAME}${response.data.audioUrl}`;
+        const audioUrl = UploadService.normalizeUrl(HOSTNAME, response.data.audioUrl);
         setFormExamData({
           ...formExamData,
           audioUrl: audioUrl,
@@ -403,8 +403,14 @@ export default function Exams() {
   }, [currentPage]);
 
   const handleEditExam = (exam) => {
+    // Normalize audio URL if it's relative (from DB)
+    const audioUrl = exam?.audioUrl && !exam.audioUrl.startsWith("http") 
+      ? UploadService.normalizeUrl(HOSTNAME, exam.audioUrl)
+      : exam?.audioUrl;
+
     setFormExamData({
       ...exam,
+      audioUrl: audioUrl,
       title: exam?.title?.text,
       startTime: dayjs(exam?.startTime),
       endTime: dayjs(exam?.endTime),

@@ -212,7 +212,7 @@ export default function Blogs() {
       console.log("uploadImageBlog ~ response:", response);
 
       if (response && response.data && response.data.imageUrl) {
-        const imageUrl = `${HOSTNAME}${response.data.imageUrl}`;
+        const imageUrl = UploadService.normalizeUrl(HOSTNAME, response.data.imageUrl);
         setFormData((prev) => ({
           ...prev,
           imgUrl: imageUrl,
