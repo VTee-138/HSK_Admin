@@ -18,7 +18,6 @@ import {
   Category as CategoryIcon,
   PhotoCamera as PhotoCameraIcon,
   Tag as TagIcon,
-  Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";

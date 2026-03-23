@@ -32,7 +32,6 @@ export default function Users() {
   const [isSearch, setIsSearch] = useState(false);
   const [listUsers, setListUsers] = useState([]);
   const examsPerPage = 5;
-  const indexOfLastExam = currentPage * examsPerPage;
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleFetch = async () => {
@@ -49,7 +48,7 @@ export default function Users() {
 
   useEffect(() => {
     handleFetch();
-  }, [currentPage]);
+  }, [currentPage, handleFetch]);
 
   const handleEditUser = (user) => {
     setIsEditing(true);

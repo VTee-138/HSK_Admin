@@ -33,7 +33,7 @@ const Home = () => {
 
   useEffect(() => {
     handleFetch();
-  }, []);
+  }, [handleFetch]);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const localActiveNav = localStorage.getItem("active-nav");

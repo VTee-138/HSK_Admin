@@ -4,11 +4,9 @@ import {
   LayoutDashboard, 
   Users, 
   FileText,
-  GraduationCap,
   MoreVertical,
   LogOut,
 } from 'lucide-react';
-import logo from '../../images/logo.png';
 
 export default function AdminSidebar({ 
   isSidebarOpen, 
