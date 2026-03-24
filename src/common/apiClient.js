@@ -1,6 +1,6 @@
 import axios from "axios";
-import { REACT_APP_API_BASE_URL, HOSTNAME } from "../config/env";
-
+const HOSTNAME = "https://backend.tiengtrung86hsk.com";
+const REACT_APP_API_BASE_URL = "https://backend.tiengtrung86hsk.com/api/v2";
 // Tạo instance Axios
 const apiClient = axios.create({
   baseURL: REACT_APP_API_BASE_URL,
@@ -45,5 +45,4 @@ export const del = (url, config = {}) => apiClient.delete(url, config);
 export const patch = (url, data, config = {}) => apiClient.patch(url, data, config);
 
 export default apiClient;
-
-export { HOSTNAME };
+export { HOSTNAME }

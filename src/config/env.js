@@ -11,8 +11,8 @@ const config = {
 };
 
 // Get current environment
-const env = process.env.NODE_ENV || 'development';
-const currentConfig = config[env] || config.development;
+const env = process.env.NODE_ENV || 'production';
+const currentConfig = config[env] || config.production;
 
 export const REACT_APP_API_BASE_URL = currentConfig.REACT_APP_API_BASE_URL;
 export const HOSTNAME = currentConfig.HOSTNAME;
