@@ -27,6 +27,7 @@ const TYPES_BY_SECTION = {
     { value: "TN", label: "Single Choice" },
     { value: "DS", label: "True / False" },
     { value: "MT", label: "Matching" },
+    { value: "WT", label: "Writing (tự luận)" },
   ],
   WRITING: [
     { value: "WT", label: "Writing (tự luận)" },

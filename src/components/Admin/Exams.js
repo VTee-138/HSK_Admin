@@ -570,7 +570,7 @@ export default function Exams() {
   // the base set of columns used by the Excel templates. propositions are
   // included after the explanation so that MT worksheets can provide them.
   const BASE_HEADERS = [
-    "Type (TN/DS/MT)",
+    "Type (TN/DS/MT/WT)",
     "Question Content",
     "Option A",
     "Option B",
@@ -597,6 +597,7 @@ export default function Exams() {
   
   const SAMPLE_ROWS_BY_SECTION = {
     READING: [
+      ["[VÍ DỤ] WT", "Viết một đoạn ngắn tóm tắt nội dung đoạn đọc.", "Câu trả lời mẫu", "Có thể chấm linh hoạt theo ý đúng"],
       ["[VÍ DỤ] MT", "Tỉnh nào sau đây", "Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "", "", "B", "Hà Nội là thủ đô của Việt Nam"],
     ],
     LISTENING: [
@@ -652,7 +653,7 @@ export default function Exams() {
       // Skip example rows marked with [VÍ DỤ]
       if (rawType.startsWith("[VÍ DỤ]")) continue;
 
-      const type = rawType;
+      const type = rawType.toUpperCase();
       if (!type) continue;
 
       const content = String(parts[1] || "").trim();
@@ -666,10 +667,15 @@ export default function Exams() {
         correctAnswer: "",
         explain: "",
       };
-      // writing types (WT and WR) use columns 2 and 3 only
+      // WT/WR support both compact template (col 2/3) and full template (col 8/9)
       if (type === "WT" || type === "WR") {
-        newQ.correctAnswer = String(parts[2] || "").trim();
-        newQ.explain = String(parts[3] || "").trim();
+        const compactAnswer = String(parts[2] || "").trim();
+        const compactExplain = String(parts[3] || "").trim();
+        const fullAnswer = String(parts[8] || "").trim();
+        const fullExplain = String(parts[9] || "").trim();
+
+        newQ.correctAnswer = compactAnswer || fullAnswer;
+        newQ.explain = compactExplain || fullExplain;
         questions.push(newQ);
         continue;
       }
