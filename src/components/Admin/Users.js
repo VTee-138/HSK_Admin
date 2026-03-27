@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Edit2, Trash2, Search } from "lucide-react";
 import { toast } from "react-toastify";
 import UserForm from "./UserForm";
@@ -34,7 +34,7 @@ export default function Users() {
   const examsPerPage = 5;
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleFetch = async () => {
+  const handleFetch = useCallback(async () => {
     try {
       const response = await getUsers(currentPage, limit, searchQuery);
       setListUsers(response?.data);
@@ -44,7 +44,7 @@ export default function Users() {
       const message = error?.response?.data?.message;
       toast.error(message);
     }
-  };
+  }, [currentPage, limit, searchQuery]);
 
   useEffect(() => {
     handleFetch();

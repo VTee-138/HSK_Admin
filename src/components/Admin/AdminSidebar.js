@@ -4,6 +4,7 @@ import {
   LayoutDashboard, 
   Users, 
   FileText,
+  ClipboardCheck,
   MoreVertical,
   LogOut,
 } from 'lucide-react';
@@ -23,6 +24,7 @@ export default function AdminSidebar({
     { icon: LayoutDashboard, label: "Dashboard", id: "Dashboard" },
     { icon: Users, label: "Users", id: "Users" },
     { icon: FileText, label: "Exams", id: "Exams" },
+    { icon: ClipboardCheck, label: "Submissions", id: "Submissions" },
     // { icon: BookOpen, label: "Blogs", id: "Blogs" },
   ];
 

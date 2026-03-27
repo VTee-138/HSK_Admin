@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Menu,
 } from "lucide-react";
@@ -11,11 +11,12 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Dashboard from "./Dashboard";
 import AdminSidebar from "./AdminSidebar";
+import Submissions from "./Submissions";
 
 const Home = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const handleFetch = async () => {
+  const handleFetch = useCallback(async () => {
     try {
       const response = await getUserInfoById();
       console.log(" handleFetch ~ response:", response);
@@ -29,7 +30,7 @@ const Home = () => {
       const message = error?.response?.data?.message;
       toast.error(message);
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     handleFetch();
@@ -56,6 +57,8 @@ const Home = () => {
         return <Blogs />;
       case "Exams":
         return <Exams />;
+      case "Submissions":
+        return <Submissions />;
       default:
         return null;
     }
