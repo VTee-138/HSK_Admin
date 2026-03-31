@@ -40,6 +40,17 @@ function buildDefaultType(section) {
   return types[0].value;
 }
 
+function normalizeDsAnswer(answer) {
+  if (answer === true) return "A";
+  if (answer === false) return "B";
+
+  const value = String(answer || "").trim().toUpperCase();
+  if (value === "A" || value === "TRUE") return "A";
+  if (value === "B" || value === "FALSE") return "B";
+
+  return "";
+}
+
 // reuse the same confirmation dialog widget used elsewhere
 function ConfirmDialog({
   open,
@@ -163,7 +174,11 @@ export default function QuestionDialog({
       setSttOverride(editQuestion.question?.replace(/\D/g, "") || String(nextNumber));
       setContent(editQuestion.contentQuestions || "");
       setImageUrl(editQuestion.imageUrl || "");
-      setCorrectAnswer(editQuestion.correctAnswer || "");
+      setCorrectAnswer(
+        editQuestion.type === "DS"
+          ? normalizeDsAnswer(editQuestion.correctAnswer)
+          : editQuestion.correctAnswer || ""
+      );
 
       if (editQuestion.type === "TN") {
         const opts = ["A", "B", "C", "D", "E", "F"]
@@ -235,7 +250,7 @@ export default function QuestionDialog({
         imageUrl,
         contentAnswerA: "True",
         contentAnswerB: "False",
-        correctAnswer,
+        correctAnswer: normalizeDsAnswer(correctAnswer),
         explain: "",
       };
     }

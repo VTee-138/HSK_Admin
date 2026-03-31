@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
-import { Edit2, Trash2, CheckCircle2, XCircle, FileText } from "lucide-react";
+import { Edit2, Trash2, CheckCircle2, XCircle, FileText, Search } from "lucide-react";
 import dayjs from "dayjs";
 import {
   checkLatexContent,
@@ -106,6 +106,11 @@ export default function Exams() {
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteExamId, setDeleteExamId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingExamId, setEditingExamId] = useState(null);
+  const [pendingEditExam, setPendingEditExam] = useState(null);
+  const [editConfirmOpen, setEditConfirmOpen] = useState(false);
+  const [switchEditWarningOpen, setSwitchEditWarningOpen] = useState(false);
 
   useEffect(() => {
     const savedDraft = localStorage.getItem("examDraft");
@@ -170,6 +175,7 @@ export default function Exams() {
       },
     });
     setQuestionsData([]);
+    setEditingExamId(null);
     if (audioInputRef.current) {
       audioInputRef.current.value = null;
     }
@@ -388,7 +394,7 @@ export default function Exams() {
 
   const handleFetch = async () => {
     try {
-      const response = await getExams(currentPage, limit);
+      const response = await getExams(currentPage, limit, searchQuery.trim());
       setListExams(response?.data);
       setTotalPages(response?.totalPages);
       setCurrentPage(response?.currentPage);
@@ -400,23 +406,62 @@ export default function Exams() {
 
   useEffect(() => {
     handleFetch();
-  }, [currentPage]);
+  }, [currentPage, searchQuery]);
 
-  const handleEditExam = (exam) => {
-    // Normalize audio URL if it's relative (from DB)
-    const audioUrl = exam?.audioUrl && !exam.audioUrl.startsWith("http") 
+  const buildEditableExamData = (exam) => {
+    const audioUrl = exam?.audioUrl && !exam.audioUrl.startsWith("http")
       ? UploadService.normalizeUrl(HOSTNAME, exam.audioUrl)
       : exam?.audioUrl;
 
-    setFormExamData({
+    return {
       ...exam,
-      audioUrl: audioUrl,
-      title: exam?.title?.text,
-      startTime: dayjs(exam?.startTime),
-      endTime: dayjs(exam?.endTime),
+      audioUrl,
+      title: exam?.title?.text || "",
+      skillTimes: {
+        listening: exam?.skillTimes?.listening ?? 0,
+        reading: exam?.skillTimes?.reading ?? 0,
+        writing: exam?.skillTimes?.writing ?? 0,
+      },
+      startTime: exam?.startTime ? dayjs(exam.startTime) : null,
+      endTime: exam?.endTime ? dayjs(exam.endTime) : null,
+    };
+  };
+
+  const applyEditExam = (exam) => {
+    const editableExam = buildEditableExamData(exam);
+    setFormExamData(editableExam);
+    setQuestion(exam?.questions?.[0] || {
+      question: "Câu 1",
+      contentQuestions: "",
+      imageUrl: "",
+      section: "",
+      answers: "",
     });
-    setQuestion(exam?.questions[0]);
-    setQuestionsData(exam?.questions);
+    setQuestionsData(exam?.questions || []);
+    setEditingExamId(exam?._id || null);
+  };
+
+  const handleEditExam = (exam) => {
+    if (!exam) return;
+
+    if (editingExamId && editingExamId !== exam._id) {
+      setSwitchEditWarningOpen(true);
+      return;
+    }
+
+    setPendingEditExam(exam);
+    setEditConfirmOpen(true);
+  };
+
+  const confirmEditExam = () => {
+    if (!pendingEditExam) {
+      setEditConfirmOpen(false);
+      return;
+    }
+
+    applyEditExam(pendingEditExam);
+    setPendingEditExam(null);
+    setEditConfirmOpen(false);
   };
 
   const handleChangeInputQuestion = (event) => {
@@ -474,6 +519,7 @@ export default function Exams() {
           title: "",
           time: null,
           type: "",
+          access: "PUBLIC",
           audioUrl: "",
           skillTimes: {
             listening: 0,
@@ -483,6 +529,7 @@ export default function Exams() {
         });
         setDataInputQuestion("", []);
         setQuestionsData([]);
+        setEditingExamId(null);
         localStorage.removeItem("examDraft");
       }
     } catch (error) {
@@ -614,6 +661,21 @@ export default function Exams() {
     ],
   };
 
+  const getCellText = (value) => {
+    if (value === undefined || value === null) return "";
+    return String(value).trim();
+  };
+
+  const normalizeDsImportAnswer = (value) => {
+    if (value === true) return "A";
+    if (value === false) return "B";
+
+    const normalized = getCellText(value).toUpperCase();
+    if (normalized === "A" || normalized === "TRUE") return "A";
+    if (normalized === "B" || normalized === "FALSE") return "B";
+    return normalized;
+  };
+
   const buildAndDownloadXLSX = (rows, filename, headers = BASE_HEADERS) => {
     const XLSX = require("xlsx");
     const wsData = [headers, ...rows];
@@ -649,14 +711,14 @@ export default function Exams() {
       const parts = rows[i];
       if (!parts || parts.length < 2) continue;
 
-      let rawType = String(parts[0] || "").trim();
+      let rawType = getCellText(parts[0]);
       // Skip example rows marked with [VÍ DỤ]
       if (rawType.startsWith("[VÍ DỤ]")) continue;
 
       const type = rawType.toUpperCase();
       if (!type) continue;
 
-      const content = String(parts[1] || "").trim();
+      const content = getCellText(parts[1]);
       // prepare base object
       let newQ = {
         id: new Date().getTime() + i,
@@ -669,10 +731,10 @@ export default function Exams() {
       };
       // WT/WR support both compact template (col 2/3) and full template (col 8/9)
       if (type === "WT" || type === "WR") {
-        const compactAnswer = String(parts[2] || "").trim();
-        const compactExplain = String(parts[3] || "").trim();
-        const fullAnswer = String(parts[8] || "").trim();
-        const fullExplain = String(parts[9] || "").trim();
+        const compactAnswer = getCellText(parts[2]);
+        const compactExplain = getCellText(parts[3]);
+        const fullAnswer = getCellText(parts[8]);
+        const fullExplain = getCellText(parts[9]);
 
         newQ.correctAnswer = compactAnswer || fullAnswer;
         newQ.explain = compactExplain || fullExplain;
@@ -680,32 +742,34 @@ export default function Exams() {
         continue;
       }
       // otherwise behave as before
-      newQ.correctAnswer = String(parts[8] || "").trim();
-      newQ.explain = String(parts[9] || "").trim();
+      newQ.correctAnswer = getCellText(parts[8]);
+      newQ.explain = getCellText(parts[9]);
 
       if (type === "TN") {
-        newQ.contentAnswerA = String(parts[2] || "").trim();
-        newQ.contentAnswerB = String(parts[3] || "").trim();
-        newQ.contentAnswerC = String(parts[4] || "").trim();
-        newQ.contentAnswerD = String(parts[5] || "").trim();
-        if (String(parts[6] || "").trim()) newQ.contentAnswerE = String(parts[6]).trim();
-        if (String(parts[7] || "").trim()) newQ.contentAnswerF = String(parts[7]).trim();
+        newQ.contentAnswerA = getCellText(parts[2]);
+        newQ.contentAnswerB = getCellText(parts[3]);
+        newQ.contentAnswerC = getCellText(parts[4]);
+        newQ.contentAnswerD = getCellText(parts[5]);
+        if (getCellText(parts[6])) newQ.contentAnswerE = getCellText(parts[6]);
+        if (getCellText(parts[7])) newQ.contentAnswerF = getCellText(parts[7]);
       } else if (type === "DS") {
-        newQ.contentAnswerA = String(parts[2] || "True").trim();
-        newQ.contentAnswerB = String(parts[3] || "False").trim();
+        const compactDsAnswer = getCellText(parts[4]);
+        newQ.contentAnswerA = getCellText(parts[2]) || "True";
+        newQ.contentAnswerB = getCellText(parts[3]) || "False";
+        newQ.correctAnswer = normalizeDsImportAnswer(compactDsAnswer || parts[8]);
       } else if (type === "MT") {
         // For MT: Option A-F columns = answers for sub-questions 1-6
         // Additional proposition texts may follow later (columns 10-15)
         // Expand into N individual questions (one per answer)
         const matchAnswers = [];
         for (let c = 2; c <= 7; c++) {
-          const ans = String(parts[c] || "").trim();
+          const ans = getCellText(parts[c]);
           if (ans) matchAnswers.push(ans);
         }
         // collect propositions if available
         const mtOptions = [];
         for (let c = 10; c <= 15; c++) {
-          const opt = String(parts[c] || "").trim();
+          const opt = getCellText(parts[c]);
           if (opt) mtOptions.push(opt);
         }
         // The first sub-question carries the content/image context
@@ -758,7 +822,7 @@ export default function Exams() {
           // pick it up from the first data row and populate formExamData.
           if (section === "LISTENING" && rows.length > 1) {
             const audioColIndex = BASE_HEADERS.length; // last column
-            const maybeUrl = String(rows[1][audioColIndex] || "").trim();
+            const maybeUrl = getCellText(rows[1][audioColIndex]);
             if (maybeUrl) {
               setFormExamData((prev) => ({ ...prev, audioUrl: maybeUrl }));
               toast.info("Âm thanh được lấy từ file import");
@@ -804,14 +868,14 @@ export default function Exams() {
           // for listening section, first data row may carry audio URL in the extra column
           if (section === "LISTENING" && rows.length > 1) {
             const audioColIndex = BASE_HEADERS.length;
-            const maybeUrl = String(rows[1][audioColIndex] || "").trim();
+            const maybeUrl = getCellText(rows[1][audioColIndex]);
             if (maybeUrl) {
               setFormExamData((prev) => ({ ...prev, audioUrl: maybeUrl }));
               toast.info("Âm thanh được lấy từ file import");
             }
           }
 
-          const newQuestions = parseRowsToQuestions(rows).map((q) => ({
+          const newQuestions = parseRowsToQuestions(rows, section).map((q) => ({
             ...q,
             section,
           }));
@@ -845,6 +909,24 @@ export default function Exams() {
 
       {/* Exam Table */}
       <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
+          <div className="relative w-full max-w-md">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => {
+                setCurrentPage(1);
+                setSearchQuery(event.target.value);
+              }}
+              placeholder="Tìm đề thi đã import theo tên..."
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400"
+            />
+          </div>
+          <div className="text-sm text-gray-500 whitespace-nowrap">
+            {listExams?.length || 0} đề thi
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -971,6 +1053,25 @@ export default function Exams() {
         onCancel={() => setDeleteConfirmOpen(false)}
         onConfirm={performDeleteExam}
         confirmText="Xóa"
+      />
+      <ConfirmDialog
+        open={editConfirmOpen}
+        title="Xác nhận chỉnh sửa"
+        message="Bạn có muốn chỉnh sửa đề thi này không?"
+        onCancel={() => {
+          setEditConfirmOpen(false);
+          setPendingEditExam(null);
+        }}
+        onConfirm={confirmEditExam}
+        confirmText="Chỉnh sửa"
+      />
+      <ConfirmDialog
+        open={switchEditWarningOpen}
+        title="Đang chỉnh sửa đề khác"
+        message="Vui lòng Save exam đang chỉnh sửa trước khi mở đề thi khác để tránh mất dữ liệu."
+        onCancel={() => setSwitchEditWarningOpen(false)}
+        onConfirm={() => setSwitchEditWarningOpen(false)}
+        confirmText="Đã hiểu"
       />
 
       {/* Exam Form */}

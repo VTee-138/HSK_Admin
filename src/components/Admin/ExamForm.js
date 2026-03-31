@@ -133,6 +133,22 @@ function buildDisplayItems(questions) {
   return items;
 }
 
+function normalizeDsAnswer(answer) {
+  if (answer === true) return "A";
+  if (answer === false) return "B";
+
+  const value = String(answer || "").trim().toUpperCase();
+  if (value === "A" || value === "TRUE") return "A";
+  if (value === "B" || value === "FALSE") return "B";
+
+  return "";
+}
+
+function normalizeChoiceAnswer(answer) {
+  const value = String(answer || "").trim().toUpperCase();
+  return /^[A-Z]$/.test(value) ? value : "";
+}
+
 const GroupPreviewItem = ({ group, startIndex, onDelete, onEdit, onMoveUp, onMoveDown, isFirst, isLast }) => {
   const first = group[0];
   const displayNum = startIndex + 1;
@@ -224,6 +240,8 @@ const GroupPreviewItem = ({ group, startIndex, onDelete, onEdit, onMoveUp, onMov
 const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, onMoveDown, isFirst, isLast }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { question, type, contentQuestions, imageUrl } = questionItem;
+  const selectedChoiceAnswer = type === "TN" ? normalizeChoiceAnswer(questionItem.correctAnswer) : "";
+  const selectedDsAnswer = type === "DS" ? normalizeDsAnswer(questionItem.correctAnswer) : "";
 
   let displayNum = index + 1;
   if (question && question.match(/\d+/)) {
@@ -273,19 +291,26 @@ const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, 
                   const key = `contentAnswer${opt}`;
                   const content = questionItem[key];
                   if (!content) return null;
+                  const isSelected = selectedChoiceAnswer === opt;
                   return (
                     <div
                       key={opt}
-                      className="flex items-start gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded"
+                      className={`flex items-start gap-3 p-2 rounded border transition-all ${
+                        isSelected ? "bg-gray-50 border-gray-200" : "border-transparent"
+                      }`}
                     >
-                      <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-red-400">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center ${
+                        isSelected ? "border-red-400" : "border-gray-300"
+                      }`}>
+                        <div className={`w-2.5 h-2.5 rounded-full ${
+                          isSelected ? "bg-red-500" : "bg-transparent"
+                        }`}></div>
                       </div>
                       <div className="flex gap-2">
                         <span className="font-bold text-gray-700 min-w-[1.5rem]">
                           {opt}.
                         </span>
-                        <span className="text-gray-600">{content}</span>
+                        <span className={isSelected ? "text-gray-700 font-medium" : "text-gray-600"}>{content}</span>
                       </div>
                     </div>
                   );
@@ -296,19 +321,26 @@ const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, 
                   const key = `contentAnswer${char}`;
                   const content = questionItem[key];
                   if (!content) return null;
+                  const isSelected = selectedChoiceAnswer === char;
                   return (
                     <div
                       key={char}
-                      className="flex items-start gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded"
+                      className={`flex items-start gap-3 p-2 rounded border transition-all ${
+                        isSelected ? "bg-gray-50 border-gray-200" : "border-transparent"
+                      }`}
                     >
-                      <div className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-red-400">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center ${
+                        isSelected ? "border-red-400" : "border-gray-300"
+                      }`}>
+                        <div className={`w-2.5 h-2.5 rounded-full ${
+                          isSelected ? "bg-red-500" : "bg-transparent"
+                        }`}></div>
                       </div>
                       <div className="flex gap-2">
                         <span className="font-bold text-gray-700 min-w-[1.5rem]">
                           {char}.
                         </span>
-                        <span className="text-gray-600">{content}</span>
+                        <span className={isSelected ? "text-gray-700 font-medium" : "text-gray-600"}>{content}</span>
                       </div>
                     </div>
                   );
@@ -323,16 +355,29 @@ const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, 
                   const content =
                     questionItem[`contentAnswer${opt}`] ||
                     (opt === "A" ? "True" : "False");
+                  const isSelected = selectedDsAnswer === opt;
                   return (
                     <div
                       key={opt}
-                      className="flex items-center gap-3 group cursor-pointer hover:bg-gray-50 p-1 rounded"
+                      className={`flex items-center gap-3 p-1 rounded border transition-all ${
+                        isSelected
+                          ? "bg-gray-50 border-gray-200"
+                          : "border-transparent text-gray-500"
+                      }`}
                     >
-                      <div className="w-5 h-5 rounded-full border border-gray-300 flex items-center justify-center group-hover:border-red-400">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div
+                        className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                          isSelected ? "border-red-400" : "border-gray-300"
+                        }`}
+                      >
+                        <div
+                          className={`w-2.5 h-2.5 rounded-full ${
+                            isSelected ? "bg-red-500" : "bg-transparent"
+                          }`}
+                        ></div>
                       </div>
-                      <span className="font-bold text-gray-700">{opt}.</span>
-                      <span className="text-gray-600 font-medium">
+                      <span className="font-bold text-gray-700 min-w-[1.5rem]">{opt}.</span>
+                      <span className={`${isSelected ? "text-gray-700 font-medium" : "text-gray-600"}`}>
                         {content}
                       </span>
                     </div>
