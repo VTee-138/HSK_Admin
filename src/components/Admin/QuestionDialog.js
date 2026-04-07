@@ -27,6 +27,7 @@ const TYPES_BY_SECTION = {
     { value: "TN", label: "Single Choice" },
     { value: "DS", label: "True / False" },
     { value: "MT", label: "Matching" },
+    { value: "DL", label: "Gap Filling (điền vào chỗ trống)" },
     { value: "WT", label: "Writing (tự luận)" },
   ],
   WRITING: [
@@ -133,6 +134,15 @@ export default function QuestionDialog({
 
   const [explain, setExplain] = useState(""); // common explanation for any type
 
+  // DL (Gap Filling) – exactly 10 sub-question blocks
+  const buildEmptyDlSubQuestions = () =>
+    Array(10).fill(null).map(() => ({
+      content: "",
+      options: { A: "", B: "", C: "", D: "" },
+      correctAnswer: "",
+    }));
+  const [dlSubQuestions, setDlSubQuestions] = useState(buildEmptyDlSubQuestions);
+
   // keep options array same size as mtAnswers ONLY when any option text exists.
   useEffect(() => {
     const hasOptions = mtOptions.some((opt) => String(opt).trim() !== "");
@@ -207,6 +217,26 @@ export default function QuestionDialog({
       }
       // explanation
       setExplain(editQuestion.explain || "");
+
+      // DL sub-questions seed
+      if (editQuestion.type === "DL") {
+        if (Array.isArray(editQuestion.subQuestions) && editQuestion.subQuestions.length > 0) {
+          const filled = editQuestion.subQuestions.map((sq) => ({
+            content: sq.contentQuestions || "",
+            options: {
+              A: sq.contentAnswerA || "",
+              B: sq.contentAnswerB || "",
+              C: sq.contentAnswerC || "",
+              D: sq.contentAnswerD || "",
+            },
+            correctAnswer: sq.correctAnswer || "",
+          }));
+          while (filled.length < 10) filled.push({ content: "", options: { A: "", B: "", C: "", D: "" }, correctAnswer: "" });
+          setDlSubQuestions(filled.slice(0, 10));
+        } else {
+          setDlSubQuestions(buildEmptyDlSubQuestions());
+        }
+      }
 
       if (editQuestion.type === "WR" || editQuestion.type === "WT") {
         if (Array.isArray(editQuestion.correctAnswers) && editQuestion.correctAnswers.length) {
@@ -315,7 +345,45 @@ export default function QuestionDialog({
         explain: explain,
       };
     }
+    if (type === "DL") {
+      return {
+        question: qName,
+        type: "DL",
+        contentQuestions: content,
+        imageUrl,
+        subQuestions: dlSubQuestions.map((sq, idx) => ({
+          question: `Câu ${sttNum + idx}`,
+          contentQuestions: sq.content,
+          contentAnswerA: sq.options.A,
+          contentAnswerB: sq.options.B,
+          contentAnswerC: sq.options.C,
+          contentAnswerD: sq.options.D,
+          correctAnswer: sq.correctAnswer,
+        })),
+        explain,
+      };
+    }
     return null;
+  };
+
+  // ── DL validation – all 10 blocks must be complete ──────────────────
+  const validateDL = () => {
+    for (let i = 0; i < dlSubQuestions.length; i++) {
+      const sq = dlSubQuestions[i];
+      if (!sq.content.trim()) {
+        toast.error(`Câu hỏi con ${i + 1}: Vui lòng nhập nội dung`);
+        return false;
+      }
+      if (!sq.options.A.trim() || !sq.options.B.trim() || !sq.options.C.trim() || !sq.options.D.trim()) {
+        toast.error(`Câu hỏi con ${i + 1}: Vui lòng nhập đủ 4 lựa chọn A, B, C, D`);
+        return false;
+      }
+      if (!sq.correctAnswer) {
+        toast.error(`Câu hỏi con ${i + 1}: Vui lòng chọn đáp án đúng`);
+        return false;
+      }
+    }
+    return true;
   };
 
   // handle dialog close with unsaved-warning
@@ -330,6 +398,7 @@ export default function QuestionDialog({
 
   // ── save (edit mode) ────────────────────────────────────────────────
   const handleSaveEdit = () => {
+    if (type === "DL" && !validateDL()) return;
     const sttNum = parseInt(sttOverride) || nextNumber;
     let built = buildQuestion(sttNum);
     if (!built) return;
@@ -350,6 +419,7 @@ export default function QuestionDialog({
 
   // ── add to session (batch mode) ─────────────────────────────────────
   const handleAddToSession = () => {
+    if (type === "DL" && !validateDL()) return;
     const sttNum = parseInt(sttOverride) || nextNumber;
     const built = buildQuestion(sttNum);
     if (!built) return;
@@ -364,9 +434,10 @@ export default function QuestionDialog({
 
   // ── finish session ──────────────────────────────────────────────────
   const handleFinish = () => {
+    if (type === "DL" && !validateDL()) return;
     const all = [...sessionQuestions];
     // Also save what's currently in the form if it has content
-    const hasContent = content.trim() || imageUrl || (type === "MT" && mtAnswers.some(a => a));
+    const hasContent = content.trim() || imageUrl || (type === "MT" && mtAnswers.some(a => a)) || type === "DL";
     if (hasContent) {
       const sttNum = parseInt(sttOverride) || nextNumber;
       const built = buildQuestion(sttNum);
@@ -402,6 +473,7 @@ export default function QuestionDialog({
     setMtAnswers(["", "", "", "", ""]);
     setMtOptions(["", "", "", "", ""]);
     setExplain("");
+    setDlSubQuestions(buildEmptyDlSubQuestions());
   };
 
   const availableTypes = TYPES_BY_SECTION[section] || TYPES_BY_SECTION.READING;
@@ -481,6 +553,8 @@ export default function QuestionDialog({
                 ? "Nội dung câu hỏi / yêu cầu"
                 : type === "WR"
                 ? "Nội dung câu (dùng '/' phân tách từ)"
+                : type === "DL"
+                ? "Đoạn văn chính / ngữ cảnh (bài đục lỗ)"
                 : "Nội dung câu hỏi (có thể để trống)"
             }
             multiline
@@ -766,6 +840,96 @@ export default function QuestionDialog({
             </div>
           )}
         </div>
+        )}
+
+        {/* ── DL Fields (Gap Filling) ── */}
+        {type === "DL" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Typography variant="subtitle2" className="text-gray-700 font-semibold">
+                10 câu hỏi con (Gap Filling)
+              </Typography>
+              <span className="text-xs text-red-500 italic font-medium">
+                Bắt buộc điền đủ cả 10 câu
+              </span>
+            </div>
+            {dlSubQuestions.map((sq, idx) => (
+              <div key={idx} className="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-3">
+                {/* Header */}
+                <div className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    {idx + 1}
+                  </span>
+                  <TextField
+                    label={`Nội dung câu ${idx + 1}`}
+                    size="small"
+                    fullWidth
+                    value={sq.content}
+                    onChange={(e) => {
+                      const updated = dlSubQuestions.map((s, i) =>
+                        i === idx ? { ...s, content: e.target.value } : s
+                      );
+                      setDlSubQuestions(updated);
+                    }}
+                  />
+                </div>
+                {/* Options A-D */}
+                <div className="grid grid-cols-2 gap-2">
+                  {["A", "B", "C", "D"].map((letter) => (
+                    <div key={letter} className="flex items-center gap-2">
+                      <span className="font-bold text-red-600 w-5 flex-shrink-0">{letter}.</span>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        placeholder={`Lựa chọn ${letter}`}
+                        value={sq.options[letter]}
+                        onChange={(e) => {
+                          const updated = dlSubQuestions.map((s, i) =>
+                            i === idx
+                              ? { ...s, options: { ...s.options, [letter]: e.target.value } }
+                              : s
+                          );
+                          setDlSubQuestions(updated);
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {/* Correct answer radio */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-xs text-gray-500 font-semibold">Đáp án đúng:</span>
+                  {["A", "B", "C", "D"].map((letter) => (
+                    <label
+                      key={letter}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-full border cursor-pointer text-sm font-semibold transition-all ${
+                        sq.correctAnswer === letter
+                          ? "bg-red-500 text-white border-red-500"
+                          : "border-gray-300 text-gray-600 hover:border-red-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`dl_correct_${idx}`}
+                        value={letter}
+                        checked={sq.correctAnswer === letter}
+                        onChange={() => {
+                          const updated = dlSubQuestions.map((s, i) =>
+                            i === idx ? { ...s, correctAnswer: letter } : s
+                          );
+                          setDlSubQuestions(updated);
+                        }}
+                        className="hidden"
+                      />
+                      {letter}
+                    </label>
+                  ))}
+                  {!sq.correctAnswer && (
+                    <span className="text-xs text-red-400 ml-2">Chưa chọn đáp án</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* WT correct answer */}

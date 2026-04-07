@@ -503,7 +503,12 @@ export default function Exams() {
         writing: parseInt(formExamData.skillTimes?.writing || 0),
       },
       questions: questionsData,
-      numberOfQuestions: questionsData?.length || 0,
+      numberOfQuestions: (questionsData || []).reduce((total, q) => {
+        if (q.type === "DL" && Array.isArray(q.subQuestions)) {
+          return total + q.subQuestions.length;
+        }
+        return total + 1;
+      }, 0),
     };
 
     try {
@@ -549,7 +554,8 @@ export default function Exams() {
       return false;
     }
 
-    if (!formExamData.time) {
+    // Allow time=0 for D4 (represents unlimited duration)
+    if (!formExamData.time && !(formExamData.type === "D4" && formExamData.time === 0)) {
       toast.error("Vui lòng nhập thời gian thi");
       return false;
     }

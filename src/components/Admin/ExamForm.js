@@ -295,16 +295,13 @@ const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, 
                   return (
                     <div
                       key={opt}
-                      className={`flex items-start gap-3 p-2 rounded border transition-all ${
-                        isSelected ? "bg-gray-50 border-gray-200" : "border-transparent"
-                      }`}
+                      className={`flex items-start gap-3 p-2 rounded border transition-all ${isSelected ? "bg-gray-50 border-gray-200" : "border-transparent"
+                        }`}
                     >
-                      <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center ${
-                        isSelected ? "border-red-400" : "border-gray-300"
-                      }`}>
-                        <div className={`w-2.5 h-2.5 rounded-full ${
-                          isSelected ? "bg-red-500" : "bg-transparent"
-                        }`}></div>
+                      <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? "border-red-400" : "border-gray-300"
+                        }`}>
+                        <div className={`w-2.5 h-2.5 rounded-full ${isSelected ? "bg-red-500" : "bg-transparent"
+                          }`}></div>
                       </div>
                       <div className="flex gap-2">
                         <span className="font-bold text-gray-700 min-w-[1.5rem]">
@@ -325,16 +322,13 @@ const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, 
                   return (
                     <div
                       key={char}
-                      className={`flex items-start gap-3 p-2 rounded border transition-all ${
-                        isSelected ? "bg-gray-50 border-gray-200" : "border-transparent"
-                      }`}
+                      className={`flex items-start gap-3 p-2 rounded border transition-all ${isSelected ? "bg-gray-50 border-gray-200" : "border-transparent"
+                        }`}
                     >
-                      <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center ${
-                        isSelected ? "border-red-400" : "border-gray-300"
-                      }`}>
-                        <div className={`w-2.5 h-2.5 rounded-full ${
-                          isSelected ? "bg-red-500" : "bg-transparent"
-                        }`}></div>
+                      <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? "border-red-400" : "border-gray-300"
+                        }`}>
+                        <div className={`w-2.5 h-2.5 rounded-full ${isSelected ? "bg-red-500" : "bg-transparent"
+                          }`}></div>
                       </div>
                       <div className="flex gap-2">
                         <span className="font-bold text-gray-700 min-w-[1.5rem]">
@@ -359,21 +353,18 @@ const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, 
                   return (
                     <div
                       key={opt}
-                      className={`flex items-center gap-3 p-1 rounded border transition-all ${
-                        isSelected
+                      className={`flex items-center gap-3 p-1 rounded border transition-all ${isSelected
                           ? "bg-gray-50 border-gray-200"
                           : "border-transparent text-gray-500"
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                          isSelected ? "border-red-400" : "border-gray-300"
-                        }`}
+                        className={`w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? "border-red-400" : "border-gray-300"
+                          }`}
                       >
                         <div
-                          className={`w-2.5 h-2.5 rounded-full ${
-                            isSelected ? "bg-red-500" : "bg-transparent"
-                          }`}
+                          className={`w-2.5 h-2.5 rounded-full ${isSelected ? "bg-red-500" : "bg-transparent"
+                            }`}
                         ></div>
                       </div>
                       <span className="font-bold text-gray-700 min-w-[1.5rem]">{opt}.</span>
@@ -477,6 +468,42 @@ export default function ExamForm({
   const [visibleSection, setVisibleSection] = useState("LISTENING");
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
+  const isD4 = formExamData?.type === "D4";
+
+  // When type switches to D4, force READING section
+  useEffect(() => {
+    if (formExamData?.type === "D4") {
+      setVisibleSection("READING");
+    }
+  }, [formExamData?.type]);
+
+  // When type changes to D4, auto-configure time and skillTimes defaults
+  const handleTypeChange = (e) => {
+    handleChangeInputQuestion(e);
+    if (e.target.value === "D4") {
+      setVisibleSection("READING");
+      handleChangeInputQuestion({ target: { name: "time", value: 60 } });
+      handleChangeInputQuestion({
+        target: {
+          name: "skillTimes",
+          value: { listening: 0, reading: 60, writing: 0 },
+        },
+      });
+    }
+  };
+
+  // For D4: when time changes, keep skillTimes.reading in sync with total time
+  const handleD4TimeChange = (e) => {
+    const newTime = Number(e.target.value);
+    handleChangeInputQuestion({ target: { name: "time", value: newTime } });
+    handleChangeInputQuestion({
+      target: {
+        name: "skillTimes",
+        value: { listening: 0, reading: newTime, writing: 0 },
+      },
+    });
+  };
+
   const handleAddManual = (fn) => {
     fn();
     toast.warn("Hãy nhấn hoàn thành nếu muốn lưu các câu đã nhập");
@@ -522,17 +549,33 @@ export default function ExamForm({
               size="small"
             />
 
-            <TextField
-              type="number"
-              label={"Th\u1eddi gian thi (ph\u00fat) *"}
-              name="time"
-              value={formExamData?.time}
-              onChange={handleChangeInputQuestion}
-              variant="outlined"
-              fullWidth
-              size="small"
-              InputLabelProps={{ shrink: true }}
-            />
+            {isD4 ? (
+              <TextField
+                select
+                label={"Th\u1eddi gian thi *"}
+                name="time"
+                value={formExamData?.time ?? 60}
+                onChange={handleD4TimeChange}
+                variant="outlined"
+                fullWidth
+                size="small"
+              >
+                <MenuItem value={60}>60 phút</MenuItem>
+                <MenuItem value={0}>Không giới hạn thời gian</MenuItem>
+              </TextField>
+            ) : (
+              <TextField
+                type="number"
+                label={"Thời gian thi (phút) *"}
+                name="time"
+                value={formExamData?.time}
+                onChange={handleChangeInputQuestion}
+                variant="outlined"
+                fullWidth
+                size="small"
+                InputLabelProps={{ shrink: true }}
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -541,12 +584,12 @@ export default function ExamForm({
               label={"K\u00ec Thi *"}
               name="type"
               value={formExamData?.type}
-              onChange={handleChangeInputQuestion}
+              onChange={handleTypeChange}
               variant="outlined"
               fullWidth
               size="small"
             >
-              {["HSK1", "HSK2", "HSK3", "HSK4", "HSK5", "HSK6"].map(
+              {["HSK1", "HSK2", "HSK3", "HSK4", "HSK5", "HSK6", "D4"].map(
                 (option, key) => (
                   <MenuItem key={key} value={option}>
                     {option}
@@ -581,114 +624,143 @@ export default function ExamForm({
             {"Phân Bổ Thời Gian Các Kỹ Năng"}
           </h2>
 
-          <p className="text-sm text-gray-600 mb-4">
-            {"Tổng thời gian các kỹ năng (Listening + Reading + Writing) phải bằng tổng thời gian thi: "}<span className="font-bold text-gray-900">{formExamData?.time || 0}{" phút"}</span>
-          </p>
+          {isD4 ? (
+            <>
+              <p className="text-sm text-gray-600 mb-4">
+                {"Đề D4 chỉ có section Reading. Thời gian Reading tự động bằng tổng thời gian thi: "}
+                <span className="font-bold text-gray-900">
+                  {formExamData?.time === 0 ? "Không giới hạn" : `${formExamData?.time || 60} phút`}
+                </span>
+              </p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
+                <TextField
+                  label={"Đọc (Reading) - phút"}
+                  value={formExamData?.time === 0 ? "Không giới hạn" : String(formExamData?.skillTimes?.reading ?? formExamData?.time ?? 60)}
+                  disabled
+                  variant="outlined"
+                  fullWidth
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  helperText={"Tự động đồng bộ với tổng thời gian thi"}
+                />
+              </div>
+              <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded border border-green-300">
+                <CheckCircle size={18} className="text-green-600" />
+                <span>{"Đề D4: Thời gian Reading được tự động đồng bộ với tổng thời gian thi."}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-600 mb-4">
+                {"Tổng thời gian các kỹ năng (Listening + Reading + Writing) phải bằng tổng thời gian thi: "}<span className="font-bold text-gray-900">{formExamData?.time || 0}{" phút"}</span>
+              </p>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
-            <TextField
-              type="number"
-              label={"Nghe (Listening) - phút *"}
-              name="listening"
-              value={formExamData?.skillTimes?.listening ?? ""}
-              onChange={(e) => {
-                const { name, value } = e.target;
-                const normalized = value === "" ? "" : Number(value);
-                handleChangeInputQuestion({
-                  target: {
-                    name: "skillTimes",
-                    value: {
-                      ...formExamData.skillTimes,
-                      [name]: normalized,
-                    },
-                  },
-                });
-              }}
-              variant="outlined"
-              fullWidth
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              inputProps={{ min: 0 }}
-            />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
+                <TextField
+                  type="number"
+                  label={"Nghe (Listening) - phút *"}
+                  name="listening"
+                  value={formExamData?.skillTimes?.listening ?? ""}
+                  onChange={(e) => {
+                    const { name, value } = e.target;
+                    const normalized = value === "" ? "" : Number(value);
+                    handleChangeInputQuestion({
+                      target: {
+                        name: "skillTimes",
+                        value: {
+                          ...formExamData.skillTimes,
+                          [name]: normalized,
+                        },
+                      },
+                    });
+                  }}
+                  variant="outlined"
+                  fullWidth
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ min: 0 }}
+                />
 
-            <TextField
-              type="number"
-              label={"Đọc (Reading) - phút *"}
-              name="reading"
-              value={formExamData?.skillTimes?.reading ?? ""}
-              onChange={(e) => {
-                const { name, value } = e.target;
-                const normalized = value === "" ? "" : Number(value);
-                handleChangeInputQuestion({
-                  target: {
-                    name: "skillTimes",
-                    value: {
-                      ...formExamData.skillTimes,
-                      [name]: normalized,
-                    },
-                  },
-                });
-              }}
-              variant="outlined"
-              fullWidth
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              inputProps={{ min: 0 }}
-            />
+                <TextField
+                  type="number"
+                  label={"Đọc (Reading) - phút *"}
+                  name="reading"
+                  value={formExamData?.skillTimes?.reading ?? ""}
+                  onChange={(e) => {
+                    const { name, value } = e.target;
+                    const normalized = value === "" ? "" : Number(value);
+                    handleChangeInputQuestion({
+                      target: {
+                        name: "skillTimes",
+                        value: {
+                          ...formExamData.skillTimes,
+                          [name]: normalized,
+                        },
+                      },
+                    });
+                  }}
+                  variant="outlined"
+                  fullWidth
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ min: 0 }}
+                />
 
-            <TextField
-              type="number"
-              label={"Viết (Writing) - phút *"}
-              name="writing"
-              value={formExamData?.skillTimes?.writing ?? ""}
-              onChange={(e) => {
-                const { name, value } = e.target;
-                const normalized = value === "" ? "" : Number(value);
-                handleChangeInputQuestion({
-                  target: {
-                    name: "skillTimes",
-                    value: {
-                      ...formExamData.skillTimes,
-                      [name]: normalized,
-                    },
-                  },
-                });
-              }}
-              variant="outlined"
-              fullWidth
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              inputProps={{ min: 0 }}
-            />
-          </div>
+                <TextField
+                  type="number"
+                  label={"Viết (Writing) - phút *"}
+                  name="writing"
+                  value={formExamData?.skillTimes?.writing ?? ""}
+                  onChange={(e) => {
+                    const { name, value } = e.target;
+                    const normalized = value === "" ? "" : Number(value);
+                    handleChangeInputQuestion({
+                      target: {
+                        name: "skillTimes",
+                        value: {
+                          ...formExamData.skillTimes,
+                          [name]: normalized,
+                        },
+                      },
+                    });
+                  }}
+                  variant="outlined"
+                  fullWidth
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
+                  inputProps={{ min: 0 }}
+                />
+              </div>
 
-          {/* Validation Message */}
-          {(() => {
-            const skillTimes = formExamData?.skillTimes || {};
-            const listeningTime = parseInt(skillTimes.listening || 0);
-            const readingTime = parseInt(skillTimes.reading || 0);
-            const writingTime = parseInt(skillTimes.writing || 0);
-            const totalSkillTime = listeningTime + readingTime + writingTime;
-            const totalTime = parseInt(formExamData?.time || 0);
+              {/* Validation Message */}
+              {(() => {
+                const skillTimes = formExamData?.skillTimes || {};
+                const listeningTime = parseInt(skillTimes.listening || 0);
+                const readingTime = parseInt(skillTimes.reading || 0);
+                const writingTime = parseInt(skillTimes.writing || 0);
+                const totalSkillTime = listeningTime + readingTime + writingTime;
+                const totalTime = parseInt(formExamData?.time || 0);
 
-            if (totalSkillTime === totalTime) {
-              return (
-                <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded border border-green-300">
-                  <CheckCircle size={18} className="text-green-600" />
-                  <span>{"Phân bổ thời gian hợp lệ!"}</span>
-                </div>
-              );
-            } else {
-              return (
-                <div className="flex items-center gap-2 text-red-700 bg-red-50 p-3 rounded border border-red-300">
-                  <XCircle size={18} className="text-red-600" />
-                  <span>
-                    {`Tổng thời gian các kỹ năng (${totalSkillTime} phút) phải bằng ${totalTime} phút`}
-                  </span>
-                </div>
-              );
-            }
-          })()}
+                if (totalSkillTime === totalTime) {
+                  return (
+                    <div className="flex items-center gap-2 text-green-700 bg-green-50 p-3 rounded border border-green-300">
+                      <CheckCircle size={18} className="text-green-600" />
+                      <span>{"Phân bổ thời gian hợp lệ!"}</span>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="flex items-center gap-2 text-red-700 bg-red-50 p-3 rounded border border-red-300">
+                      <XCircle size={18} className="text-red-600" />
+                      <span>
+                        {`Tổng thời gian các kỹ năng (${totalSkillTime} phút) phải bằng ${totalTime} phút`}
+                      </span>
+                    </div>
+                  );
+                }
+              })()}
+            </>
+          )}
         </div>
 
         {/* Questions Section */}
@@ -703,124 +775,125 @@ export default function ExamForm({
               { label: "Listening", key: "LISTENING" },
               { label: "Reading", key: "READING" },
               { label: "Writing", key: "WRITING" },
-            ].map((s) => (
-              <button
-                key={s.key}
-                type="button"
-                className={`px-3 py-1 rounded-md text-sm font-medium focus:outline-none ${
-                  visibleSection === s.key
-                    ? "bg-red-600 text-white"
-                    : "bg-gray-200 text-gray-700"
-                }`}
-                onClick={() => setVisibleSection(s.key)}
-              >
-                {s.label}
-              </button>
-            ))}
+            ]
+              .filter((s) => !isD4 || s.key === "READING")
+              .map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  className={`px-3 py-1 rounded-md text-sm font-medium focus:outline-none ${visibleSection === s.key
+                      ? "bg-red-600 text-white"
+                      : "bg-gray-200 text-gray-700"
+                    }`}
+                  onClick={() => setVisibleSection(s.key)}
+                >
+                  {s.label}
+                </button>
+              ))}
           </div>
 
           {/* ── Section Listening ───────────────────────────────────── */}
           {visibleSection === "LISTENING" && (
             <>
-            <div className="mb-4 flex flex-row justify-between items-center mt-6">
-            <span className="font-medium text-gray-700">
-              Section Listening - {"Danh s\u00e1ch c\u00e2u h\u1ecfi nghe"}
-            </span>
-            <div className="flex items-center gap-2">
-              <SectionExcelButtons
-                section="LISTENING"
-                handleDownloadSampleForSection={handleDownloadSampleForSection}
-                handleImportExcelForSection={handleImportExcelForSection}
-              />
-              <Button
-                component="label"
-                variant="outlined"
-                className="h-8 text-xs border-red-500 text-red-600 hover:bg-red-50 normal-case"
-                startIcon={<UploadCloud size={14} />}
-              >
-                Upload Audio
-                <VisuallyHiddenInput
-                  type="file"
-                  accept="audio/*"
-                  onChange={handleUploadAudio}
-                  ref={audioInputRef}
-                />
-              </Button>
-              <Button
-                variant="outlined"
-                className="h-8 text-xs border-red-500 text-red-600 hover:bg-red-50 normal-case"
-                startIcon={<Plus size={14} />}
-                onClick={() => handleAddManual(addListeningQuestion)}
-              >
-                {"Th\u00eam c\u00e2u th\u1ee7 c\u00f4ng"}
-              </Button>
-            </div>
-          </div>
-
-          {formExamData.audioUrl && (
-            <div className="w-full bg-gray-50 p-3 rounded border border-gray-200 mb-3">
-              <div className="flex justify-between items-center mb-2">
-                <div className="text-sm font-medium text-gray-700">
-                  Audio File:
-                </div>
-                <Button
-                  size="small"
-                  color="error"
-                  startIcon={<Trash2 size={16} />}
-                  onClick={handleDeleteAudio}
-                  className="normal-case hover:bg-red-50"
-                >
-                  Remove
-                </Button>
-              </div>
-              <audio controls className="w-full" key={formExamData.audioUrl}>
-                <source src={formExamData.audioUrl} type="audio/mpeg" />
-                Your browser does not support the audio element.
-              </audio>
-            </div>
-          )}
-
-          {visibleSection === "LISTENING" && (listeningQuestions.length === 0 ? (
-            <p className="text-gray-500 italic mb-5">
-              {"Ch\u01b0a c\u00f3 c\u00e2u h\u1ecfi n\u00e0o \u0111\u01b0\u1ee3c th\u00eam."}
-            </p>
-          ) : (
-            <div className="space-y-4 mb-5">
-              {buildDisplayItems(listeningQuestions).map((item, dispIdx, arr) => {
-                const isFirst = dispIdx === 0;
-                const isLast = dispIdx === arr.length - 1;
-                if (item.type === "single") {
-                  return (
-                    <QuestionPreviewItem
-                      key={item.index}
-                      questionItem={item.question}
-                      index={item.index}
-                      onDelete={() => handleDeleteQuestion(item.index)}
-                      onEdit={() => handleEditQuestion(item.index)}
-                      onMoveUp={() => handleReorderQuestion(item.index, item.index - 1)}
-                      onMoveDown={() => handleReorderQuestion(item.index, item.index + 1)}
-                      isFirst={isFirst}
-                      isLast={isLast}
-                    />
-                  );
-                }
-                // group
-                return (
-                  <GroupPreviewItem
-                    key={item.startIndex}
-                    group={item.questions}
-                    startIndex={item.startIndex}
-                    onDelete={() => handleDeleteQuestion(item.startIndex, item.questions.length)}
-                    onEdit={() => handleEditQuestion(item.startIndex)}
-                    onMoveUp={() => handleMoveGroup(item.startIndex, item.questions.length, -1)}
-                    onMoveDown={() => handleMoveGroup(item.startIndex, item.questions.length, 1)}
-                    isFirst={isFirst}
-                    isLast={isLast}
+              <div className="mb-4 flex flex-row justify-between items-center mt-6">
+                <span className="font-medium text-gray-700">
+                  Section Listening - {"Danh s\u00e1ch c\u00e2u h\u1ecfi nghe"}
+                </span>
+                <div className="flex items-center gap-2">
+                  <SectionExcelButtons
+                    section="LISTENING"
+                    handleDownloadSampleForSection={handleDownloadSampleForSection}
+                    handleImportExcelForSection={handleImportExcelForSection}
                   />
-                );
-              })}
-            </div>
-          ))}
+                  <Button
+                    component="label"
+                    variant="outlined"
+                    className="h-8 text-xs border-red-500 text-red-600 hover:bg-red-50 normal-case"
+                    startIcon={<UploadCloud size={14} />}
+                  >
+                    Upload Audio
+                    <VisuallyHiddenInput
+                      type="file"
+                      accept="audio/*"
+                      onChange={handleUploadAudio}
+                      ref={audioInputRef}
+                    />
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    className="h-8 text-xs border-red-500 text-red-600 hover:bg-red-50 normal-case"
+                    startIcon={<Plus size={14} />}
+                    onClick={() => handleAddManual(addListeningQuestion)}
+                  >
+                    {"Th\u00eam c\u00e2u th\u1ee7 c\u00f4ng"}
+                  </Button>
+                </div>
+              </div>
+
+              {formExamData.audioUrl && (
+                <div className="w-full bg-gray-50 p-3 rounded border border-gray-200 mb-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="text-sm font-medium text-gray-700">
+                      Audio File:
+                    </div>
+                    <Button
+                      size="small"
+                      color="error"
+                      startIcon={<Trash2 size={16} />}
+                      onClick={handleDeleteAudio}
+                      className="normal-case hover:bg-red-50"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  <audio controls className="w-full" key={formExamData.audioUrl}>
+                    <source src={formExamData.audioUrl} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+              )}
+
+              {visibleSection === "LISTENING" && (listeningQuestions.length === 0 ? (
+                <p className="text-gray-500 italic mb-5">
+                  {"Ch\u01b0a c\u00f3 c\u00e2u h\u1ecfi n\u00e0o \u0111\u01b0\u1ee3c th\u00eam."}
+                </p>
+              ) : (
+                <div className="space-y-4 mb-5">
+                  {buildDisplayItems(listeningQuestions).map((item, dispIdx, arr) => {
+                    const isFirst = dispIdx === 0;
+                    const isLast = dispIdx === arr.length - 1;
+                    if (item.type === "single") {
+                      return (
+                        <QuestionPreviewItem
+                          key={item.index}
+                          questionItem={item.question}
+                          index={item.index}
+                          onDelete={() => handleDeleteQuestion(item.index)}
+                          onEdit={() => handleEditQuestion(item.index)}
+                          onMoveUp={() => handleReorderQuestion(item.index, item.index - 1)}
+                          onMoveDown={() => handleReorderQuestion(item.index, item.index + 1)}
+                          isFirst={isFirst}
+                          isLast={isLast}
+                        />
+                      );
+                    }
+                    // group
+                    return (
+                      <GroupPreviewItem
+                        key={item.startIndex}
+                        group={item.questions}
+                        startIndex={item.startIndex}
+                        onDelete={() => handleDeleteQuestion(item.startIndex, item.questions.length)}
+                        onEdit={() => handleEditQuestion(item.startIndex)}
+                        onMoveUp={() => handleMoveGroup(item.startIndex, item.questions.length, -1)}
+                        onMoveDown={() => handleMoveGroup(item.startIndex, item.questions.length, 1)}
+                        isFirst={isFirst}
+                        isLast={isLast}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
 
             </>
           )}
@@ -850,45 +923,45 @@ export default function ExamForm({
               </div>
 
               {readingQuestions.length === 0 ? (
-            <p className="text-gray-500 italic mb-5">
-              {"Ch\u01b0a c\u00f3 c\u00e2u h\u1ecfi n\u00e0o \u0111\u01b0\u1ee3c th\u00eam."}
-            </p>
-          ) : (
-            <div className="space-y-4 mb-5">
-              {buildDisplayItems(readingQuestions).map((item, dispIdx, arr) => {
-                const isFirst = dispIdx === 0;
-                const isLast = dispIdx === arr.length - 1;
-                if (item.type === "single") {
-                  return (
-                    <QuestionPreviewItem
-                      key={item.index}
-                      questionItem={item.question}
-                      index={item.index}
-                      onDelete={() => handleDeleteQuestion(item.index)}
-                      onEdit={() => handleEditQuestion(item.index)}
-                      onMoveUp={() => handleReorderQuestion(item.index, item.index - 1)}
-                      onMoveDown={() => handleReorderQuestion(item.index, item.index + 1)}
-                      isFirst={isFirst}
-                      isLast={isLast}
-                    />
-                  );
-                }
-                return (
-                  <GroupPreviewItem
-                    key={item.startIndex}
-                    group={item.questions}
-                    startIndex={item.startIndex}
-                    onDelete={() => handleDeleteQuestion(item.startIndex, item.questions.length)}
-                    onEdit={() => handleEditQuestion(item.startIndex)}
-                    onMoveUp={() => handleMoveGroup(item.startIndex, item.questions.length, -1)}
-                    onMoveDown={() => handleMoveGroup(item.startIndex, item.questions.length, 1)}
-                    isFirst={isFirst}
-                    isLast={isLast}
-                  />
-                );
-              })}
-            </div>
-          )}
+                <p className="text-gray-500 italic mb-5">
+                  {"Ch\u01b0a c\u00f3 c\u00e2u h\u1ecfi n\u00e0o \u0111\u01b0\u1ee3c th\u00eam."}
+                </p>
+              ) : (
+                <div className="space-y-4 mb-5">
+                  {buildDisplayItems(readingQuestions).map((item, dispIdx, arr) => {
+                    const isFirst = dispIdx === 0;
+                    const isLast = dispIdx === arr.length - 1;
+                    if (item.type === "single") {
+                      return (
+                        <QuestionPreviewItem
+                          key={item.index}
+                          questionItem={item.question}
+                          index={item.index}
+                          onDelete={() => handleDeleteQuestion(item.index)}
+                          onEdit={() => handleEditQuestion(item.index)}
+                          onMoveUp={() => handleReorderQuestion(item.index, item.index - 1)}
+                          onMoveDown={() => handleReorderQuestion(item.index, item.index + 1)}
+                          isFirst={isFirst}
+                          isLast={isLast}
+                        />
+                      );
+                    }
+                    return (
+                      <GroupPreviewItem
+                        key={item.startIndex}
+                        group={item.questions}
+                        startIndex={item.startIndex}
+                        onDelete={() => handleDeleteQuestion(item.startIndex, item.questions.length)}
+                        onEdit={() => handleEditQuestion(item.startIndex)}
+                        onMoveUp={() => handleMoveGroup(item.startIndex, item.questions.length, -1)}
+                        onMoveDown={() => handleMoveGroup(item.startIndex, item.questions.length, 1)}
+                        isFirst={isFirst}
+                        isLast={isLast}
+                      />
+                    );
+                  })}
+                </div>
+              )}
 
             </>
           )}
@@ -918,80 +991,80 @@ export default function ExamForm({
               </div>
 
               {writingQuestions.length === 0 ? (
-            <p className="text-gray-500 italic mb-5">
-              {"Ch\u01b0a c\u00f3 c\u00e2u h\u1ecfi n\u00e0o \u0111\u01b0\u1ee3c th\u00eam."}
-            </p>
-          ) : (
-            <div className="space-y-4 mb-5">
-              {buildDisplayItems(writingQuestions).map((item, dispIdx, arr) => {
-                const isFirst = dispIdx === 0;
-                const isLast = dispIdx === arr.length - 1;
-                if (item.type === "single") {
-                  return (
-                    <QuestionPreviewItem
-                      key={item.index}
-                      questionItem={item.question}
-                      index={item.index}
-                      onDelete={() => handleDeleteQuestion(item.index)}
-                      onEdit={() => handleEditQuestion(item.index)}
-                      onMoveUp={() => handleReorderQuestion(item.index, item.index - 1)}
-                      onMoveDown={() => handleReorderQuestion(item.index, item.index + 1)}
-                      isFirst={isFirst}
-                      isLast={isLast}
-                    />
-                  );
-                }
-                return (
-                  <GroupPreviewItem
-                    key={item.startIndex}
-                    group={item.questions}
-                    startIndex={item.startIndex}
-                    onDelete={() => handleDeleteQuestion(item.startIndex, item.questions.length)}
-                    onEdit={() => handleEditQuestion(item.startIndex)}
-                    onMoveUp={() => handleMoveGroup(item.startIndex, item.questions.length, -1)}
-                    onMoveDown={() => handleMoveGroup(item.startIndex, item.questions.length, 1)}
-                    isFirst={isFirst}
-                    isLast={isLast}
-                  />
-                );
-              })}
-            </div>
-          )}
+                <p className="text-gray-500 italic mb-5">
+                  {"Ch\u01b0a c\u00f3 c\u00e2u h\u1ecfi n\u00e0o \u0111\u01b0\u1ee3c th\u00eam."}
+                </p>
+              ) : (
+                <div className="space-y-4 mb-5">
+                  {buildDisplayItems(writingQuestions).map((item, dispIdx, arr) => {
+                    const isFirst = dispIdx === 0;
+                    const isLast = dispIdx === arr.length - 1;
+                    if (item.type === "single") {
+                      return (
+                        <QuestionPreviewItem
+                          key={item.index}
+                          questionItem={item.question}
+                          index={item.index}
+                          onDelete={() => handleDeleteQuestion(item.index)}
+                          onEdit={() => handleEditQuestion(item.index)}
+                          onMoveUp={() => handleReorderQuestion(item.index, item.index - 1)}
+                          onMoveDown={() => handleReorderQuestion(item.index, item.index + 1)}
+                          isFirst={isFirst}
+                          isLast={isLast}
+                        />
+                      );
+                    }
+                    return (
+                      <GroupPreviewItem
+                        key={item.startIndex}
+                        group={item.questions}
+                        startIndex={item.startIndex}
+                        onDelete={() => handleDeleteQuestion(item.startIndex, item.questions.length)}
+                        onEdit={() => handleEditQuestion(item.startIndex)}
+                        onMoveUp={() => handleMoveGroup(item.startIndex, item.questions.length, -1)}
+                        onMoveDown={() => handleMoveGroup(item.startIndex, item.questions.length, 1)}
+                        isFirst={isFirst}
+                        isLast={isLast}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
 
-        <Divider className="my-2 border-gray-100" />
+          <Divider className="my-2 border-gray-100" />
 
-        {/* Final Actions */}
-        <div className="flex gap-4 justify-end">
-          <Button
-            variant="contained"
-            onClick={handleUpsertExam}
-            startIcon={<CheckCircle size={18} />}
-            className="bg-green-600 hover:bg-green-700 px-6 normal-case shadow-none"
-          >
-            Save Exam
-          </Button>
-          <Button
-            variant="outlined"
-            color="inherit"
-            className="normal-case"
-            onClick={handleCancel}
-          >
-            Cancel
-          </Button>
-          <ConfirmDialog
-            open={cancelConfirmOpen}
-            title="Xác nhận hủy"
-            message="Bạn có chắc muốn hủy? Mọi thay đổi sẽ không được ghi nhận!"
-            onCancel={() => setCancelConfirmOpen(false)}
-            onConfirm={() => {
-              setCancelConfirmOpen(false);
-              if (handleCancel) handleCancel();
-            }}
-            confirmText="Hủy"
-          />
-        </div>
+          {/* Final Actions */}
+          <div className="flex gap-4 justify-end">
+            <Button
+              variant="contained"
+              onClick={handleUpsertExam}
+              startIcon={<CheckCircle size={18} />}
+              className="bg-green-600 hover:bg-green-700 px-6 normal-case shadow-none"
+            >
+              Save Exam
+            </Button>
+            <Button
+              variant="outlined"
+              color="inherit"
+              className="normal-case"
+              onClick={handleCancel}
+            >
+              Cancel
+            </Button>
+            <ConfirmDialog
+              open={cancelConfirmOpen}
+              title="Xác nhận hủy"
+              message="Bạn có chắc muốn hủy? Mọi thay đổi sẽ không được ghi nhận!"
+              onCancel={() => setCancelConfirmOpen(false)}
+              onConfirm={() => {
+                setCancelConfirmOpen(false);
+                if (handleCancel) handleCancel();
+              }}
+              confirmText="Hủy"
+            />
+          </div>
         </div>
       </div>
     </div>
