@@ -1,6 +1,6 @@
 import axios from "axios";
-const HOSTNAME = "https://backend.tiengtrung86hsk.com";
-const REACT_APP_API_BASE_URL = "https://backend.tiengtrung86hsk.com/api/v2";
+const HOSTNAME = "http://localhost:4000";
+const REACT_APP_API_BASE_URL = "http://localhost:4000/api/v2";
 // Tạo instance Axios
 const apiClient = axios.create({
   baseURL: REACT_APP_API_BASE_URL,
