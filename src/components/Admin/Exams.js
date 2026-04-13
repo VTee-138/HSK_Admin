@@ -33,6 +33,49 @@ const configDate = {
   timeZone: "Asia/Ho_Chi_Minh",
 };
 
+const HSK3_POINT_BY_SECTION = {
+  LISTENING: 2.5,
+  READING: 3,
+  WRITING: 10,
+};
+
+const getQuestionNumber = (question) => {
+  const text = String(question?.question || "");
+  const matched = text.match(/(\d+)/);
+  return matched ? Number(matched[1]) : undefined;
+};
+
+const getHSK4PointByQuestionNumber = (questionNumber) => {
+  if (!Number.isFinite(questionNumber) || questionNumber <= 0) return undefined;
+  if (questionNumber <= 25) return 2;
+  if (questionNumber <= 85) return 2.5;
+  if (questionNumber <= 95) return 6;
+  if (questionNumber <= 100) return 8;
+  return undefined;
+};
+
+const parsePointValue = (value) => {
+  if (value === undefined || value === null || value === "") return undefined;
+  const normalized = String(value).trim().replace(",", ".");
+  const numberPoint = Number(normalized);
+  return Number.isFinite(numberPoint) ? numberPoint : undefined;
+};
+
+const getDefaultQuestionPoint = (examType, section) => {
+  if (String(examType || "").toUpperCase() !== "HSK3") return undefined;
+  return HSK3_POINT_BY_SECTION[String(section || "").toUpperCase()];
+};
+
+const resolveQuestionPoint = (question, examType) => {
+  const normalizedType = String(examType || "").toUpperCase();
+  const parsedPoint = parsePointValue(question?.point);
+  if (parsedPoint !== undefined) return parsedPoint;
+  if (normalizedType === "HSK4") {
+    return getHSK4PointByQuestionNumber(getQuestionNumber(question));
+  }
+  return getDefaultQuestionPoint(examType, question?.section);
+};
+
 // simple reusable confirmation dialog (same as ExamForm)
 function ConfirmDialog({
   open,
@@ -269,7 +312,15 @@ export default function Exams() {
 
   // Batch save from dialog; insert at the desired positions, shifting later questions
   const handleAddQuestionSubmit = (newQuestions) => {
-    const withSection = newQuestions.map((q) => ({ ...q, section: dialogState.section }));
+    const withSection = newQuestions.map((q) => {
+      const section = dialogState.section;
+      const point = resolveQuestionPoint({ ...q, section }, formExamData?.type);
+      return {
+        ...q,
+        section,
+        ...(point !== undefined ? { point } : {}),
+      };
+    });
     setQuestionsData((prev) => {
       let copy = prev ? [...prev] : [];
       // sort by target position so we insert in order
@@ -322,7 +373,13 @@ export default function Exams() {
           copy = [...before, ...newGroup, ...after];
         }
       } else {
-        copy[index] = { ...updatedQ, section: prev[index]?.section || dialogState.section };
+        const section = prev[index]?.section || dialogState.section;
+        const point = resolveQuestionPoint({ ...updatedQ, section }, formExamData?.type);
+        copy[index] = {
+          ...updatedQ,
+          section,
+          ...(point !== undefined ? { point } : {}),
+        };
       }
       return renumber(copy);
     });
@@ -502,7 +559,11 @@ export default function Exams() {
         reading: parseInt(formExamData.skillTimes?.reading || 0),
         writing: parseInt(formExamData.skillTimes?.writing || 0),
       },
-      questions: questionsData,
+      questions: (questionsData || []).map((q) => {
+        const point = resolveQuestionPoint(q, formExamData.type);
+        if (point === undefined) return q;
+        return { ...q, point };
+      }),
       numberOfQuestions: (questionsData || []).reduce((total, q) => {
         if (q.type === "DL" && Array.isArray(q.subQuestions)) {
           return total + q.subQuestions.length;
@@ -632,6 +693,7 @@ export default function Exams() {
     "Option E",
     "Option F",
     "Correct Answer",
+    "Point",
     "Explanation",
     // for reading MT: additional proposition texts (lines to show for matching)
     "Proposition A",
@@ -647,23 +709,31 @@ export default function Exams() {
   const HEADERS = (section) =>
     section === "LISTENING" ? [...BASE_HEADERS, "Audio URL"] : BASE_HEADERS;
 
+  const getAudioColumnIndex = (rows) => {
+    const headerRow = rows?.[0] || [];
+    const foundIndex = headerRow.findIndex(
+      (cell) => getCellText(cell).toLowerCase() === "audio url"
+    );
+    return foundIndex >= 0 ? foundIndex : BASE_HEADERS.length;
+  };
+
   
   const SAMPLE_ROWS_BY_SECTION = {
     READING: [
-      ["[VÍ DỤ] WT", "Viết một đoạn ngắn tóm tắt nội dung đoạn đọc.", "Câu trả lời mẫu", "Có thể chấm linh hoạt theo ý đúng"],
-      ["[VÍ DỤ] MT", "Tỉnh nào sau đây", "Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "", "", "B", "Hà Nội là thủ đô của Việt Nam"],
+      ["[VÍ DỤ] WT", "Viết một đoạn ngắn tóm tắt nội dung đoạn đọc.", "Câu trả lời mẫu", "3", "Có thể chấm linh hoạt theo ý đúng"],
+      ["[VÍ DỤ] MT", "Tỉnh nào sau đây", "Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Cần Thơ", "", "", "B", "3", "Hà Nội là thủ đô của Việt Nam"],
     ],
     LISTENING: [
       // audio url column is optional; put the audio link in the first data row's last cell
-      ["[VÍ DỤ] DS", "Nghe và xác định: Người đó đang ăn sáng.", "True", "False", "", "", "", "", "A", "", "https://example.com/audio.mp3"],
+      ["[VÍ DỤ] DS", "Nghe và xác định: Người đó đang ăn sáng.", "True", "False", "", "", "", "", "A", "2.5", "", "", "", "", "", "", "", "https://example.com/audio.mp3"],
       // Single Choice
-      ["[VÍ DỤ] TN", "Người phụ nữ muốn làm gì vào cuối tuần?", "Đi mua sắm", "Xem phim", "Đi dã ngoại", "", "", "", "B", "", "https://example.com/audio.mp3"],
+      ["[VÍ DỤ] TN", "Người phụ nữ muốn làm gì vào cuối tuần?", "Đi mua sắm", "Xem phim", "Đi dã ngoại", "", "", "", "B", "2.5", "", "", "", "", "", "", "", "https://example.com/audio.mp3"],
       // Matching – Option A-F = đáp án cho sub-question 1-6 (ảnh A-F upload riêng)
-      ["[VÍ DỤ] MT", "Nghe hội thoại và nối câu hỏi với hình ảnh (A-F)", "B", "A", "D", "F", "C", "E", "", "", "https://example.com/audio.mp3"],
+      ["[VÍ DỤ] MT", "Nghe hội thoại và nối câu hỏi với hình ảnh (A-F)", "B", "A", "D", "F", "C", "E", "", "2.5", "", "", "", "", "", "", "", "https://example.com/audio.mp3"],
     ],
     WRITING: [
-      ["[VÍ DỤ] WT", "Viết một đoạn văn ngắn về chủ đề gia đình.", "Your answer here", "Khuyến khích dùng từ vựng đã học"],
-      ["[VÍ DỤ] WR", "面包/一个/商店里/没有/也", "面包一个商店里没有 也", "(Đáp án viết liền không dấu '/')"]
+      ["[VÍ DỤ] WT", "Viết một đoạn văn ngắn về chủ đề gia đình.", "Your answer here", "10", "Khuyến khích dùng từ vựng đã học"],
+      ["[VÍ DỤ] WR", "面包/一个/商店里/没有/也", "面包一个商店里没有 也", "10", "(Đáp án viết liền không dấu '/')"]
     ],
   };
 
@@ -692,7 +762,7 @@ export default function Exams() {
     ws["!cols"] = [
       { wch: 18 }, { wch: 50 }, { wch: 16 }, { wch: 16 },
       { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
-      { wch: 14 }, { wch: 25 },
+      { wch: 14 }, { wch: 10 }, { wch: 25 },
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, "Questions");
@@ -703,7 +773,7 @@ export default function Exams() {
     const rows = SAMPLE_ROWS_BY_SECTION[section];
     if (rows && rows.length > 0) {
       const headersFor = section === "WRITING"
-        ? ["Type (WT/WR)", "Question Content", "Correct Answer", "Explanation"]
+        ? ["Type (WT/WR)", "Question Content", "Correct Answer", "Point", "Explanation"]
         : HEADERS(section);
       buildAndDownloadXLSX(rows, `question_sample_${section.toLowerCase()}.xlsx`, headersFor);
     }
@@ -738,18 +808,29 @@ export default function Exams() {
       // WT/WR support both compact template (col 2/3) and full template (col 8/9)
       if (type === "WT" || type === "WR") {
         const compactAnswer = getCellText(parts[2]);
-        const compactExplain = getCellText(parts[3]);
+        const compactPoint = parsePointValue(parts[3]);
+        const compactExplain = getCellText(parts[4]);
         const fullAnswer = getCellText(parts[8]);
-        const fullExplain = getCellText(parts[9]);
+        const fullPoint = parsePointValue(parts[9]);
+        const fullExplain = getCellText(parts[10]);
 
         newQ.correctAnswer = compactAnswer || fullAnswer;
+        const resolvedPoint = compactPoint ?? fullPoint ?? getDefaultQuestionPoint(formExamData?.type, section);
+        if (resolvedPoint !== undefined) {
+          newQ.point = resolvedPoint;
+        }
         newQ.explain = compactExplain || fullExplain;
         questions.push(newQ);
         continue;
       }
       // otherwise behave as before
       newQ.correctAnswer = getCellText(parts[8]);
-      newQ.explain = getCellText(parts[9]);
+      const importedPoint = parsePointValue(parts[9]);
+      const defaultPoint = getDefaultQuestionPoint(formExamData?.type, section);
+      if (importedPoint !== undefined || defaultPoint !== undefined) {
+        newQ.point = importedPoint ?? defaultPoint;
+      }
+      newQ.explain = getCellText(parts[10]);
 
       if (type === "TN") {
         newQ.contentAnswerA = getCellText(parts[2]);
@@ -774,7 +855,7 @@ export default function Exams() {
         }
         // collect propositions if available
         const mtOptions = [];
-        for (let c = 10; c <= 15; c++) {
+        for (let c = 11; c <= 16; c++) {
           const opt = getCellText(parts[c]);
           if (opt) mtOptions.push(opt);
         }
@@ -790,6 +871,7 @@ export default function Exams() {
             imageUrl: "",
             correctAnswer: matchAnswers[m],
             explain: "",
+            ...(newQ.point !== undefined ? { point: newQ.point } : {}),
             matchGroup: groupId, // links sub-questions together (within section+import)
             matchIndex: m, // position within the group
             matchTotal: matchAnswers.length, // total in the group
@@ -827,7 +909,7 @@ export default function Exams() {
           // if the imported sheet contained an audio URL column for listening,
           // pick it up from the first data row and populate formExamData.
           if (section === "LISTENING" && rows.length > 1) {
-            const audioColIndex = BASE_HEADERS.length; // last column
+            const audioColIndex = getAudioColumnIndex(rows);
             const maybeUrl = getCellText(rows[1][audioColIndex]);
             if (maybeUrl) {
               setFormExamData((prev) => ({ ...prev, audioUrl: maybeUrl }));
@@ -873,7 +955,7 @@ export default function Exams() {
           });
           // for listening section, first data row may carry audio URL in the extra column
           if (section === "LISTENING" && rows.length > 1) {
-            const audioColIndex = BASE_HEADERS.length;
+            const audioColIndex = getAudioColumnIndex(rows);
             const maybeUrl = getCellText(rows[1][audioColIndex]);
             if (maybeUrl) {
               setFormExamData((prev) => ({ ...prev, audioUrl: maybeUrl }));
@@ -1109,6 +1191,7 @@ export default function Exams() {
         open={openDialogQuestion}
         onClose={() => setOpenDialogQuestion(false)}
         section={dialogState.section}
+        examType={formExamData?.type}
         nextNumber={dialogState.nextNumber}
         onSaveMany={handleAddQuestionSubmit}
         editQuestion={dialogState.editQuestion}

@@ -41,6 +41,39 @@ function buildDefaultType(section) {
   return types[0].value;
 }
 
+const HSK3_POINT_BY_SECTION = {
+  LISTENING: 2.5,
+  READING: 3,
+  WRITING: 10,
+};
+
+function getHSK4PointByQuestionNumber(questionNumber) {
+  if (!Number.isFinite(questionNumber) || questionNumber <= 0) return "";
+  if (questionNumber <= 25) return "2";
+  if (questionNumber <= 85) return "2.5";
+  if (questionNumber <= 95) return "6";
+  if (questionNumber <= 100) return "8";
+  return "";
+}
+
+function buildDefaultPoint(examType, section, questionNumber) {
+  const normalizedType = String(examType || "").toUpperCase();
+  if (normalizedType === "HSK3") {
+    return String(HSK3_POINT_BY_SECTION[section] ?? "");
+  }
+  if (normalizedType === "HSK4") {
+    return getHSK4PointByQuestionNumber(questionNumber);
+  }
+  return "";
+}
+
+function parsePointValue(value) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const normalized = String(value).trim().replace(",", ".");
+  const point = Number(normalized);
+  return Number.isFinite(point) ? point : undefined;
+}
+
 function normalizeDsAnswer(answer) {
   if (answer === true) return "A";
   if (answer === false) return "B";
@@ -102,6 +135,7 @@ export default function QuestionDialog({
   open,
   onClose,
   section = "READING",
+  examType = "",
   nextNumber = 1,
   onSaveMany,
   editQuestion = null,
@@ -115,6 +149,7 @@ export default function QuestionDialog({
   const [sttOverride, setSttOverride] = useState(String(nextNumber));
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [point, setPoint] = useState(buildDefaultPoint(examType, section, Number(nextNumber)));
 
   // TN options
   const [tnOptions, setTnOptions] = useState([
@@ -174,7 +209,7 @@ export default function QuestionDialog({
   useEffect(() => {
     // mark dirty on any field or session modification
     if (open) setIsDirty(true);
-  }, [open, type, sttOverride, content, imageUrl, correctAnswer, tnOptions, mtAnswers, mtOptions, explain, sessionQuestions]);
+  }, [open, type, sttOverride, content, imageUrl, point, correctAnswer, tnOptions, mtAnswers, mtOptions, explain, sessionQuestions]);
 
   // ── seed form when edit mode or when dialog opens ──────────────────
   useEffect(() => {
@@ -184,6 +219,12 @@ export default function QuestionDialog({
       setSttOverride(editQuestion.question?.replace(/\D/g, "") || String(nextNumber));
       setContent(editQuestion.contentQuestions || "");
       setImageUrl(editQuestion.imageUrl || "");
+      const editPoint = parsePointValue(editQuestion.point);
+      setPoint(
+        editPoint !== undefined
+          ? String(editPoint)
+          : buildDefaultPoint(examType, section, Number(editQuestion.question?.replace(/\D/g, "") || nextNumber))
+      );
       setCorrectAnswer(
         editQuestion.type === "DS"
           ? normalizeDsAnswer(editQuestion.correctAnswer)
@@ -272,6 +313,8 @@ export default function QuestionDialog({
   // ── build question object from current form ─────────────────────────
   const buildQuestion = (sttNum) => {
     const qName = `Câu ${sttNum}`;
+    const parsedPoint = parsePointValue(point);
+    const pointPayload = parsedPoint !== undefined ? { point: parsedPoint } : {};
     if (type === "DS") {
       return {
         question: qName,
@@ -282,6 +325,7 @@ export default function QuestionDialog({
         contentAnswerB: "False",
         correctAnswer: normalizeDsAnswer(correctAnswer),
         explain: "",
+        ...pointPayload,
       };
     }
     if (type === "TN") {
@@ -292,6 +336,7 @@ export default function QuestionDialog({
         imageUrl,
         correctAnswer,
         explain: "",
+        ...pointPayload,
       };
       tnOptions.forEach((opt) => { q[`contentAnswer${opt.id}`] = opt.value; });
       return q;
@@ -315,6 +360,7 @@ export default function QuestionDialog({
         imageUrl: idx === 0 ? imageUrl : "",
         correctAnswer: ans.toUpperCase(),
         explain: "",
+        ...pointPayload,
         matchGroup: groupId,
         matchIndex: idx,
         matchTotal: filled.length,
@@ -331,6 +377,7 @@ export default function QuestionDialog({
         correctAnswer: normalizedAnswers[0] || correctAnswer || "",
         correctAnswers: normalizedAnswers,
         explain: explain,
+        ...pointPayload,
       };
     }
     if (type === "WR") {
@@ -343,6 +390,7 @@ export default function QuestionDialog({
         correctAnswer: normalizedAnswers[0] || correctAnswer || "",
         correctAnswers: normalizedAnswers,
         explain: explain,
+        ...pointPayload,
       };
     }
     if (type === "DL") {
@@ -361,6 +409,7 @@ export default function QuestionDialog({
           correctAnswer: sq.correctAnswer,
         })),
         explain,
+        ...pointPayload,
       };
     }
     return null;
@@ -462,6 +511,7 @@ export default function QuestionDialog({
     setSttOverride(String(sttNum));
     setContent("");
     setImageUrl("");
+    setPoint(buildDefaultPoint(examType, section, Number(sttNum)));
     setTnOptions([
       { id: "A", value: "" },
       { id: "B", value: "" },
@@ -477,6 +527,18 @@ export default function QuestionDialog({
   };
 
   const availableTypes = TYPES_BY_SECTION[section] || TYPES_BY_SECTION.READING;
+
+  useEffect(() => {
+    if (!open || isEditMode) return;
+    const numericStt = Number(sttOverride || nextNumber);
+    setPoint((prevPoint) => {
+      const defaultPoint = buildDefaultPoint(examType, section, numericStt);
+      if (prevPoint === "" || prevPoint === null || prevPoint === undefined) {
+        return defaultPoint;
+      }
+      return prevPoint;
+    });
+  }, [open, isEditMode, examType, section, sttOverride, nextNumber]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -516,6 +578,15 @@ export default function QuestionDialog({
               <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
             ))}
           </TextField>
+          <TextField
+            label="Điểm"
+            type="number"
+            value={point}
+            onChange={(e) => setPoint(e.target.value)}
+            size="small"
+            className="w-28"
+            inputProps={{ min: 0, step: 0.5 }}
+          />
         </div>
 
         {/* Image Upload */}

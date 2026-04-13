@@ -149,9 +149,49 @@ function normalizeChoiceAnswer(answer) {
   return /^[A-Z]$/.test(value) ? value : "";
 }
 
-const GroupPreviewItem = ({ group, startIndex, onDelete, onEdit, onMoveUp, onMoveDown, isFirst, isLast }) => {
+const HSK3_POINT_BY_SECTION = {
+  LISTENING: 2.5,
+  READING: 3,
+  WRITING: 10,
+};
+
+function getQuestionNumber(questionItem) {
+  const matched = String(questionItem?.question || "").match(/(\d+)/);
+  return matched ? Number(matched[1]) : undefined;
+}
+
+function getHSK4PointByQuestionNumber(questionNumber) {
+  if (!Number.isFinite(questionNumber) || questionNumber <= 0) return undefined;
+  if (questionNumber <= 25) return 2;
+  if (questionNumber <= 85) return 2.5;
+  if (questionNumber <= 95) return 6;
+  if (questionNumber <= 100) return 8;
+  return undefined;
+}
+
+function resolveQuestionPoint(questionItem, examType) {
+  const parsed = Number(String(questionItem?.point ?? "").replace(",", "."));
+  if (Number.isFinite(parsed)) return parsed;
+  const normalizedType = String(examType || "").toUpperCase();
+  if (normalizedType === "HSK3") {
+    return HSK3_POINT_BY_SECTION[questionItem?.section];
+  }
+  if (normalizedType === "HSK4") {
+    return getHSK4PointByQuestionNumber(getQuestionNumber(questionItem));
+  }
+  return undefined;
+}
+
+function formatPoint(point) {
+  if (!Number.isFinite(point)) return "";
+  if (Number.isInteger(point)) return String(point);
+  return String(point);
+}
+
+const GroupPreviewItem = ({ group, startIndex, onDelete, onEdit, onMoveUp, onMoveDown, isFirst, isLast, examType }) => {
   const first = group[0];
   const displayNum = startIndex + 1;
+  const firstPoint = resolveQuestionPoint(first, examType);
   return (
     <>
       <div className="p-5 border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-all">
@@ -167,6 +207,11 @@ const GroupPreviewItem = ({ group, startIndex, onDelete, onEdit, onMoveUp, onMov
                 MT
               </span>
             </div>
+            {firstPoint !== undefined && (
+              <div className="mt-2 text-center text-[11px] font-semibold text-red-600">
+                {formatPoint(firstPoint)} điểm
+              </div>
+            )}
           </div>
 
           <div className="flex-grow">
@@ -191,6 +236,11 @@ const GroupPreviewItem = ({ group, startIndex, onDelete, onEdit, onMoveUp, onMov
                     {idx + 1}.
                   </span>
                   <span className="text-gray-600">{q.correctAnswer || "?"}</span>
+                  {resolveQuestionPoint(q, examType) !== undefined && (
+                    <span className="text-xs text-red-600 font-semibold">
+                      ({formatPoint(resolveQuestionPoint(q, examType))} điểm)
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -237,9 +287,10 @@ const GroupPreviewItem = ({ group, startIndex, onDelete, onEdit, onMoveUp, onMov
 };
 
 // ─── Question Preview Item ────────────────────────────────────────────────────
-const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, onMoveDown, isFirst, isLast }) => {
+const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, onMoveDown, isFirst, isLast, examType }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { question, type, contentQuestions, imageUrl } = questionItem;
+  const point = resolveQuestionPoint(questionItem, examType);
   const selectedChoiceAnswer = type === "TN" ? normalizeChoiceAnswer(questionItem.correctAnswer) : "";
   const selectedDsAnswer = type === "DS" ? normalizeDsAnswer(questionItem.correctAnswer) : "";
 
@@ -263,6 +314,11 @@ const QuestionPreviewItem = ({ questionItem, index, onDelete, onEdit, onMoveUp, 
                 {type}
               </span>
             </div>
+            {point !== undefined && (
+              <div className="mt-2 text-center text-[11px] font-semibold text-red-600">
+                {formatPoint(point)} điểm
+              </div>
+            )}
           </div>
 
           <div className="flex-grow">
@@ -868,6 +924,7 @@ export default function ExamForm({
                           key={item.index}
                           questionItem={item.question}
                           index={item.index}
+                          examType={formExamData?.type}
                           onDelete={() => handleDeleteQuestion(item.index)}
                           onEdit={() => handleEditQuestion(item.index)}
                           onMoveUp={() => handleReorderQuestion(item.index, item.index - 1)}
@@ -883,6 +940,7 @@ export default function ExamForm({
                         key={item.startIndex}
                         group={item.questions}
                         startIndex={item.startIndex}
+                        examType={formExamData?.type}
                         onDelete={() => handleDeleteQuestion(item.startIndex, item.questions.length)}
                         onEdit={() => handleEditQuestion(item.startIndex)}
                         onMoveUp={() => handleMoveGroup(item.startIndex, item.questions.length, -1)}
@@ -937,6 +995,7 @@ export default function ExamForm({
                           key={item.index}
                           questionItem={item.question}
                           index={item.index}
+                          examType={formExamData?.type}
                           onDelete={() => handleDeleteQuestion(item.index)}
                           onEdit={() => handleEditQuestion(item.index)}
                           onMoveUp={() => handleReorderQuestion(item.index, item.index - 1)}
@@ -951,6 +1010,7 @@ export default function ExamForm({
                         key={item.startIndex}
                         group={item.questions}
                         startIndex={item.startIndex}
+                        examType={formExamData?.type}
                         onDelete={() => handleDeleteQuestion(item.startIndex, item.questions.length)}
                         onEdit={() => handleEditQuestion(item.startIndex)}
                         onMoveUp={() => handleMoveGroup(item.startIndex, item.questions.length, -1)}
@@ -1005,6 +1065,7 @@ export default function ExamForm({
                           key={item.index}
                           questionItem={item.question}
                           index={item.index}
+                          examType={formExamData?.type}
                           onDelete={() => handleDeleteQuestion(item.index)}
                           onEdit={() => handleEditQuestion(item.index)}
                           onMoveUp={() => handleReorderQuestion(item.index, item.index - 1)}
@@ -1019,6 +1080,7 @@ export default function ExamForm({
                         key={item.startIndex}
                         group={item.questions}
                         startIndex={item.startIndex}
+                        examType={formExamData?.type}
                         onDelete={() => handleDeleteQuestion(item.startIndex, item.questions.length)}
                         onEdit={() => handleEditQuestion(item.startIndex)}
                         onMoveUp={() => handleMoveGroup(item.startIndex, item.questions.length, -1)}
